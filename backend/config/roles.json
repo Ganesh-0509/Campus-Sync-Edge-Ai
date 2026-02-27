@@ -1,0 +1,39 @@
+{
+    "Software Developer": {
+        "core": [
+            "python",
+            "javascript",
+            "sql"
+        ],
+        "optional": [
+            "docker",
+            "aws",
+            "react"
+        ]
+    },
+    "Frontend Developer": {
+        "core": [
+            "javascript",
+            "react",
+            "html",
+            "css"
+        ],
+        "optional": [
+            "typescript",
+            "redux",
+            "next.js"
+        ]
+    },
+    "Backend Developer": {
+        "core": [
+            "python",
+            "sql",
+            "api"
+        ],
+        "optional": [
+            "docker",
+            "aws",
+            "node.js"
+        ]
+    }
+}

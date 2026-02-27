@@ -1,0 +1,13 @@
+{
+    "weights": {
+        "core": 0.60,
+        "optional": 0.15,
+        "project": 0.15,
+        "ats": 0.05,
+        "structure": 0.05
+    },
+    "readiness_thresholds": {
+        "job_ready": 75,
+        "improving": 50
+    }
+}
