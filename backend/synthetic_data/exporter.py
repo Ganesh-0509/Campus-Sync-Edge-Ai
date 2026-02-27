@@ -12,11 +12,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.core.supabase_client import get_supabase
 
-TABLE_NAME  = "resume_analysis_synthetic"
-BATCH_SIZE  = 100
+DEFAULT_TABLE = "resume_analysis_synthetic"
+BATCH_SIZE    = 100
 
 
-def export_to_supabase(records: list[dict]) -> dict:
+def export_to_supabase(records: list[dict], table_name: str = DEFAULT_TABLE) -> dict:
     """
     Insert all records into Supabase in batches of BATCH_SIZE.
 
@@ -33,7 +33,7 @@ def export_to_supabase(records: list[dict]) -> dict:
     for batch_num, start in enumerate(range(0, len(records), BATCH_SIZE), 1):
         batch = records[start : start + BATCH_SIZE]
         try:
-            sb.table(TABLE_NAME).insert(batch).execute()
+            sb.table(table_name).insert(batch).execute()
             success += len(batch)
             print(
                 f"  ✅ Batch {batch_num}/{total_batches} "
