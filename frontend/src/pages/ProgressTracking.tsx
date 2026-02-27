@@ -1,6 +1,8 @@
 import MiniLineChart from '../components/MiniLineChart'
 import { useResume } from '../context/ResumeContext'
+import { loadHistory, getHistoryOrDemo } from '../utils/history'
 import { Star, Award, Zap, Trophy } from 'lucide-react'
+
 
 const HISTORY = [
     { label: 'Jan', value: 38 }, { label: 'Feb', value: 43 }, { label: 'Mar', value: 50 },
@@ -23,7 +25,31 @@ const MILESTONES = [
 export default function ProgressTracking() {
     const { analysis } = useResume()
     const score = analysis?.final_score ?? 74
-    const hist = [...HISTORY.slice(0, 5), { label: 'Now', value: score }]
+    const realHistory = loadHistory()
+    const hist = getHistoryOrDemo(realHistory)
+
+    // Build heatmap from real detected_skills
+    const detectedSkills = analysis?.detected_skills ?? []
+    const heatmapSkills = detectedSkills.length >= 5
+        ? detectedSkills.slice(0, 5).map(s => s.charAt(0).toUpperCase() + s.slice(1))
+        : ['DSA', 'Python', 'React', 'SQL', 'Git']
+    const HEATMAP = [
+        { month: 'Month 1', skills: heatmapSkills, bright: 0 },
+        { month: 'Month 2', skills: heatmapSkills, bright: 2 },
+        { month: 'Month 3', skills: heatmapSkills, bright: heatmapSkills.length },
+    ]
+
+    // Milestones: auto-trigger from real history
+    const firstUploadDate = realHistory[0]?.label ?? '—'
+    const hit50 = realHistory.find(h => h.value >= 50)
+    const hitPlacement = realHistory.find(h => h.value >= 60)
+    const hitInterview = realHistory.find(h => h.value >= 80)
+    const MILESTONES = [
+        { icon: Star, label: 'First Resume Upload', date: firstUploadDate, done: realHistory.length > 0 },
+        { icon: Award, label: 'Reached 50% Score', date: hit50?.label ?? '—', done: !!hit50 },
+        { icon: Zap, label: 'Placement Ready', date: hitPlacement?.label ?? '—', done: !!hitPlacement },
+        { icon: Trophy, label: 'Interview Ready', date: hitInterview?.label ?? '—', done: !!hitInterview },
+    ]
 
     return (
         <div className="page-content">

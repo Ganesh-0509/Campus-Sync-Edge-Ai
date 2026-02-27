@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, ReactNode } from 'react'
 import type { UploadResult, PredictResult } from '../api/client'
+import { saveScore } from '../utils/history'
 
 export interface ResumeState {
     analysis: UploadResult | null
@@ -34,6 +35,8 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
         }
         setAnalysisState(a)
         localStorage.setItem(LS_KEY_ANALYSIS, JSON.stringify(a))
+        // Persist score to history for growth chart
+        saveScore(a.final_score, a.role)
     }
 
     const setPrediction = (p: PredictResult) => {
