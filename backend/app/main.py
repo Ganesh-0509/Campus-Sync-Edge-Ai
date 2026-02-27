@@ -1,60 +1,118 @@
 """
-main.py — application entry point (Phase 4A).
+main.py — application entry point (Phase 4B — ML Inference Layer).
 
-Startup order:
-  1. Validate config files (skills.json, roles.json, scoring.json)
-  2. Check Supabase connectivity (warn but don't block if unconfigured)
-  3. Accept requests
+Startup sequence:
+  1. Validate JSON configs (skills/roles/scoring)
+  2. Check Supabase connectivity (non-fatal warning)
+  3. Load v2 ML models (fatal if files missing)
+  4. Accept requests
+
+Middleware: CORS (allow-all for hackathon/dev)
+
+Routers:
+  - analyze.py   → /upload, /roles
+  - data.py      → /history, /compare, /analytics, /export
+  - ml.py        → /ml/* (Phase 4A similarity / impact)
+  - inference.py → /health, /predict  (Phase 4B RandomForest serving)
 """
 
+import logging
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.core.config_loader import validate_all
+from app.core.supabase_client import check_connection
+from app.model_loader import load_models, is_loaded, get_metadata
 from app.routers import analyze
 from app.routers import data as data_router
 from app.routers import ml as ml_router
-from app.core.config_loader import validate_all
-from app.core.supabase_client import check_connection
+from app.routers import inference as inference_router
 
+log = logging.getLogger("main")
+
+logging.basicConfig(
+    level   = logging.INFO,
+    format  = "%(asctime)s  %(levelname)-8s  [%(name)s]  %(message)s",
+    datefmt = "%H:%M:%S",
+)
+
+
+# ── Lifespan ───────────────────────────────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ── Step 1: Validate all JSON configs ────────────────────────────────────
+
+    # 1. Validate config files
     validate_all()
 
-    # ── Step 2: Check Supabase (non-fatal) ───────────────────────────────────
-    db_status = check_connection()
-    if db_status["supabase"] == "connected":
-        print(f"✅  Supabase connected → {db_status['url']}", flush=True)
+    # 2. Supabase (non-fatal)
+    db = check_connection()
+    if db["supabase"] == "connected":
+        log.info("Supabase connected  %s", db.get("url", ""))
     else:
-        print(
-            f"⚠️   Supabase: {db_status['supabase']} — {db_status.get('detail', '')}",
-            flush=True,
+        log.warning("Supabase %s — %s", db["supabase"], db.get("detail", ""))
+
+    # 3. ML models (fatal if missing)
+    try:
+        load_models()
+        log.info("ML inference layer ready.")
+    except RuntimeError as e:
+        log.error("ML model load failed: %s", e)
+        log.warning(
+            "Server starting WITHOUT ML inference. "
+            "Run:  ..\venv\\Scripts\\python -m app.ml_pipeline.train_v2 --seed 42"
         )
 
     yield
 
 
+# ── App factory ────────────────────────────────────────────────────────────────
+
 app = FastAPI(
-    title="CampusSync Edge — Career Intelligence API",
-    description=(
-        "Phase 4A — Hybrid Intelligence Layer. "
-        "Deterministic scoring · Config-driven roles · "
-        "Supabase persistence · Similarity-based ML."
+    title       = "CampusSync Edge — Resume Intelligence API",
+    description = (
+        "**Phase 4B — Production ML Inference**\n\n"
+        "- **Deterministic scoring** (config-driven)\n"
+        "- **Supabase persistence** (real resume data)\n"
+        "- **RandomForest v2 inference** (82.1% role accuracy, RMSE=1.04)\n\n"
+        "Start with `POST /upload` to analyse a resume, "
+        "then use `POST /predict` for ML-powered role prediction."
     ),
-    version="4.0.0",
-    lifespan=lifespan,
+    version     = "4.1.0",
+    lifespan    = lifespan,
+    docs_url    = "/docs",
+    redoc_url   = "/redoc",
 )
 
+# ── CORS (allow-all for hackathon) ─────────────────────────────────────────────
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins     = ["*"],
+    allow_credentials = True,
+    allow_methods     = ["*"],
+    allow_headers     = ["*"],
+)
+
+# ── Routers ────────────────────────────────────────────────────────────────────
 app.include_router(analyze.router)
 app.include_router(data_router.router)
 app.include_router(ml_router.router)
+app.include_router(inference_router.router)
 
 
-@app.get("/")
+# ── Root ────────────────────────────────────────────────────────────────────────
+
+@app.get("/", tags=["Status"])
 def root():
-    db_status = check_connection()
+    db   = check_connection()
+    meta = get_metadata() if is_loaded() else {}
     return {
-        "status":   "Backend Running",
-        "version":  "4.0.0 (Phase 4A — Hybrid Intelligence)",
-        "database": db_status["supabase"],
+        "status":        "Resume Intelligence API Running",
+        "version":       "4.1.0",
+        "model_version": meta.get("version", "not_loaded"),
+        "model_accuracy": f"{meta.get('accuracy', 0)*100:.1f}%" if meta else "N/A",
+        "database":      db["supabase"],
+        "docs":          "/docs",
     }
