@@ -160,3 +160,83 @@ def load_combined_dataset() -> list[dict]:
 
     except EnvironmentError as e:
         raise RuntimeError(f"Supabase not configured: {e}") from e
+
+
+# ── Phase 4B v2 loader (real + synthetic_v2 only) ─────────────────────────────
+
+SYNTHETIC_V2_TABLE = "resume_analysis_synthetic_v2"
+
+
+def _fetch_real_records(sb) -> tuple[list[dict], int]:
+    """Shared helper: fetch real role_analyses joined with resume skills."""
+    analyses = (
+        sb.table("role_analyses")
+        .select("*")
+        .execute()
+        .data or []
+    )
+    if not analyses:
+        return [], 0
+
+    resume_ids   = list({a["resume_id"] for a in analyses})
+    resumes_resp = (
+        sb.table("resumes")
+        .select("id, detected_skills")
+        .in_("id", resume_ids)
+        .execute()
+        if resume_ids else type("R", (), {"data": []})()
+    )
+    resume_map = {
+        r["id"]: (r.get("detected_skills") or [])
+        for r in (resumes_resp.data or [])
+    }
+
+    records: list[dict] = []
+    for a in analyses:
+        merged = {**a, "detected_skills": resume_map.get(a["resume_id"], [])}
+        rec    = _clean_record(merged, WEIGHT_REAL)
+        if rec:
+            records.append(rec)
+
+    return records, len(records)
+
+
+def load_combined_dataset_v2() -> list[dict]:
+    """
+    Fetch and merge:
+      - role_analyses (real resumes)         → sample_weight = 1.5
+      - resume_analysis_synthetic_v2         → sample_weight = 1.0
+
+    Intentionally IGNORES resume_analysis_synthetic (v1 table).
+    """
+    try:
+        sb = get_supabase()
+
+        real_records, real_count = _fetch_real_records(sb)
+
+        # ── Synthetic v2 only ─────────────────────────────────────────────────
+        synthetic_rows = (
+            sb.table(SYNTHETIC_V2_TABLE)
+            .select("*")
+            .execute()
+            .data or []
+        )
+        synthetic_records: list[dict] = []
+        for row in synthetic_rows:
+            rec = _clean_record(row, WEIGHT_SYNTHETIC)
+            if rec:
+                synthetic_records.append(rec)
+
+        combined = real_records + synthetic_records
+
+        print(
+            f"Dataset v2 loaded — "
+            f"{real_count} real (x{WEIGHT_REAL}) + "
+            f"{len(synthetic_records)} synthetic_v2 (x{WEIGHT_SYNTHETIC}) "
+            f"= {len(combined)} total",
+            flush=True,
+        )
+        return combined
+
+    except EnvironmentError as e:
+        raise RuntimeError(f"Supabase not configured: {e}") from e
