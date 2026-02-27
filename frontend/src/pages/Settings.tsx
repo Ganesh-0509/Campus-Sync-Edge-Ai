@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useResume } from '../context/ResumeContext'
+import { getHealth } from '../api/client'
 
 export default function Settings() {
     const { analysis, clear } = useResume()
@@ -8,8 +9,22 @@ export default function Settings() {
     const [autoAnalyze, setAutoAnalyze] = useState(false)
     const [apiUrl, setApiUrl] = useState('http://localhost:8000')
     const [saved, setSaved] = useState(false)
+    const [health, setHealth] = useState<{ status: string; model_version?: string; accuracy?: number; vocabulary_size?: number; trained_on?: number } | null>(null)
+
+    // Fetch real model metadata from backend
+    useEffect(() => {
+        getHealth().then(h => setHealth(h)).catch(() => { })
+    }, [])
 
     const save = () => { setSaved(true); setTimeout(() => setSaved(false), 2000) }
+
+    const modelDisplay = health
+        ? `v${health.model_version ?? '?'} — ${health.vocabulary_size ?? '?'} vocab, trained on ${health.trained_on ?? '?'} samples`
+        : 'Fetching from backend...'
+
+    const accuracyDisplay = health?.accuracy != null
+        ? `${(health.accuracy * 100).toFixed(1)}%`
+        : 'N/A'
 
     return (
         <div className="page-content">
@@ -49,7 +64,7 @@ export default function Settings() {
                 </div>
             </div>
 
-            {/* API */}
+            {/* API + Real model metadata */}
             <div className="card mb-16">
                 <div className="settings-title">API Configuration</div>
                 <div style={{ marginBottom: 12 }}>
@@ -58,11 +73,19 @@ export default function Settings() {
                 </div>
                 <div style={{ marginBottom: 12 }}>
                     <label className="select-label">Model Version</label>
-                    <input className="input-field" value="v2.0 (RandomForest — 82.1% accuracy)" readOnly style={{ opacity: 0.7 }} />
+                    <input className="input-field" value={modelDisplay} readOnly style={{ opacity: 0.75 }} />
                 </div>
-                <button className="btn btn--primary" onClick={save}>
-                    {saved ? '✓ Saved' : 'Save Settings'}
-                </button>
+                <div style={{ marginBottom: 16 }}>
+                    <label className="select-label">Model Accuracy</label>
+                    <input className="input-field" value={accuracyDisplay} readOnly style={{ opacity: 0.75 }} />
+                </div>
+                {health && (
+                    <div style={{ padding: '10px 12px', background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8, marginBottom: 14, fontSize: 12 }}>
+                        <span style={{ color: 'var(--green)', fontWeight: 600 }}>● Backend Connected</span>
+                        <span style={{ color: 'var(--text-muted)', marginLeft: 12 }}>Status: {health.status}</span>
+                    </div>
+                )}
+                <button className="btn btn--primary" onClick={save}>{saved ? '✓ Saved' : 'Save Settings'}</button>
             </div>
 
             {/* Data */}
@@ -72,7 +95,7 @@ export default function Settings() {
                     <div>
                         <div className="settings-row__label">Current Resume Analysis</div>
                         <div className="settings-row__desc">
-                            {analysis ? `${analysis.filename} — Score: ${analysis.final_score}%` : 'No resume uploaded yet'}
+                            {analysis ? `${analysis.filename} — Score: ${analysis.final_score}% — Role: ${analysis.role}` : 'No resume uploaded yet'}
                         </div>
                     </div>
                     <button className="btn btn--danger btn--sm" onClick={clear} disabled={!analysis}>

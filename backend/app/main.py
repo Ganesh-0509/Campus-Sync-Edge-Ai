@@ -29,6 +29,7 @@ from app.routers import analyze
 from app.routers import data as data_router
 from app.routers import ml as ml_router
 from app.routers import inference as inference_router
+from app.routers import interview as interview_router
 
 log = logging.getLogger("main")
 
@@ -100,6 +101,7 @@ app.include_router(analyze.router)
 app.include_router(data_router.router)
 app.include_router(ml_router.router)
 app.include_router(inference_router.router)
+app.include_router(interview_router.router)
 
 
 # ── Root ────────────────────────────────────────────────────────────────────────

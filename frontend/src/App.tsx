@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ResumeProvider } from './context/ResumeContext'
 import Layout from './components/Layout'
+import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
@@ -15,7 +16,6 @@ import ResumeComparison from './pages/ResumeComparison'
 import IndustryAlignment from './pages/IndustryAlignment'
 import Settings from './pages/Settings'
 
-/** Guard: redirect to /login if not authed */
 function PrivateRoute({ children }: { children: React.ReactNode }) {
     const { user } = useAuth()
     return user ? <>{children}</> : <Navigate to="/login" replace />
@@ -25,13 +25,19 @@ function AppRoutes() {
     const { user } = useAuth()
     return (
         <Routes>
-            {/* Auth routes (only when not logged in) */}
+            {/* Landing — always accessible */}
+            <Route path="/" element={<Landing />} />
+
+            {/* Auth routes */}
             <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
             <Route path="/signup" element={user ? <Navigate to="/dashboard" replace /> : <Signup />} />
 
             {/* Protected dashboard routes */}
-            <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
+            <Route path="/app" element={<PrivateRoute><Layout /></PrivateRoute>}>
                 <Route index element={<Navigate to="/dashboard" replace />} />
+            </Route>
+
+            <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="resume-analyzer" element={<ResumeAnalyzer />} />
                 <Route path="readiness-score" element={<ReadinessScore />} />
@@ -44,8 +50,7 @@ function AppRoutes() {
                 <Route path="settings" element={<Settings />} />
             </Route>
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
+            <Route path="*" element={<Navigate to={user ? '/dashboard' : '/'} replace />} />
         </Routes>
     )
 }
