@@ -40,3 +40,29 @@ CREATE INDEX IF NOT EXISTS idx_role_analyses_created_at ON role_analyses(created
 -- Row Level Security — disabled (backend uses service_role key)
 ALTER TABLE resumes       DISABLE ROW LEVEL SECURITY;
 ALTER TABLE role_analyses DISABLE ROW LEVEL SECURITY;
+
+-- 3. Synthetic ML training dataset (Phase 4A)
+CREATE TABLE IF NOT EXISTS resume_analysis_synthetic (
+    id                        BIGSERIAL   PRIMARY KEY,
+    detected_skills           JSONB       NOT NULL DEFAULT '[]',
+    role                      TEXT        NOT NULL,
+    final_score               INTEGER     NOT NULL,
+    readiness_category        TEXT,
+    core_coverage_percent     INTEGER,
+    optional_coverage_percent INTEGER,
+    project_score_percent     INTEGER,
+    ats_score_percent         INTEGER,
+    structure_score_percent   INTEGER,
+    missing_core_skills       JSONB       NOT NULL DEFAULT '[]',
+    missing_optional_skills   JSONB       NOT NULL DEFAULT '[]',
+    data_type                 TEXT        DEFAULT 'synthetic',
+    created_at                TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_synthetic_role       ON resume_analysis_synthetic(role);
+CREATE INDEX IF NOT EXISTS idx_synthetic_final_score ON resume_analysis_synthetic(final_score);
+CREATE INDEX IF NOT EXISTS idx_synthetic_data_type  ON resume_analysis_synthetic(data_type);
+
+ALTER TABLE resume_analysis_synthetic DISABLE ROW LEVEL SECURITY;
+GRANT ALL ON TABLE resume_analysis_synthetic TO anon, authenticated, service_role;
+GRANT ALL ON SEQUENCE resume_analysis_synthetic_id_seq TO anon, authenticated, service_role;
