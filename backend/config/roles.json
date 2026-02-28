@@ -3,12 +3,20 @@
         "core": [
             "python",
             "javascript",
-            "sql"
+            "sql",
+            "dsa",
+            "git",
+            "api",
+            "rest"
         ],
         "optional": [
             "docker",
             "aws",
-            "react"
+            "react",
+            "typescript",
+            "system design",
+            "ci/cd",
+            "testing"
         ]
     },
     "Frontend Developer": {
@@ -16,24 +24,120 @@
             "javascript",
             "react",
             "html",
-            "css"
+            "css",
+            "typescript",
+            "git"
         ],
         "optional": [
-            "typescript",
+            "next.js",
             "redux",
-            "next.js"
+            "testing",
+            "figma",
+            "vue",
+            "tailwind",
+            "graphql"
         ]
     },
     "Backend Developer": {
         "core": [
             "python",
             "sql",
-            "api"
+            "api",
+            "rest",
+            "git",
+            "dsa",
+            "postgresql"
         ],
         "optional": [
             "docker",
             "aws",
-            "node.js"
+            "node.js",
+            "redis",
+            "microservices",
+            "grpc",
+            "mongodb"
+        ]
+    },
+    "Full Stack Developer": {
+        "core": [
+            "javascript",
+            "react",
+            "python",
+            "sql",
+            "api",
+            "git",
+            "html",
+            "css"
+        ],
+        "optional": [
+            "typescript",
+            "docker",
+            "aws",
+            "next.js",
+            "postgresql",
+            "mongodb",
+            "ci/cd"
+        ]
+    },
+    "Data Scientist": {
+        "core": [
+            "python",
+            "sql",
+            "machine learning",
+            "statistics",
+            "pandas",
+            "numpy",
+            "scikit-learn"
+        ],
+        "optional": [
+            "deep learning",
+            "tensorflow",
+            "pytorch",
+            "r",
+            "spark",
+            "tableau",
+            "mlops"
+        ]
+    },
+    "ML Engineer": {
+        "core": [
+            "python",
+            "machine learning",
+            "deep learning",
+            "tensorflow",
+            "pytorch",
+            "numpy",
+            "git"
+        ],
+        "optional": [
+            "docker",
+            "kubernetes",
+            "mlops",
+            "spark",
+            "aws",
+            "gcp",
+            "onnx",
+            "fastapi"
+        ]
+    },
+    "DevOps Engineer": {
+        "core": [
+            "linux",
+            "docker",
+            "kubernetes",
+            "git",
+            "ci/cd",
+            "bash",
+            "terraform"
+        ],
+        "optional": [
+            "aws",
+            "gcp",
+            "azure",
+            "jenkins",
+            "ansible",
+            "prometheus",
+            "python"
         ]
     }
 }

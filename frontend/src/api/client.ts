@@ -75,7 +75,8 @@ export async function getRoles(): Promise<string[]> {
     const res = await fetch(`${BASE}/roles`)
     if (!res.ok) return ['Software Developer', 'Backend Developer', 'Frontend Developer', 'Full Stack Developer', 'Data Scientist', 'ML Engineer', 'DevOps Engineer']
     const data = await res.json()
-    return Array.isArray(data) ? data : data.roles ?? []
+    // Backend returns { valid_roles: [...] }
+    return Array.isArray(data) ? data : data.valid_roles ?? data.roles ?? []
 }
 
 // ── Analytics ─────────────────────────────────────────────────
