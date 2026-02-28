@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useResume } from '../context/ResumeContext'
 import { BarChart2 } from 'lucide-react'
+import SkillGraphViz from '../components/SkillGraphViz'
 
 const BASE = 'http://localhost:8000'
 
@@ -12,11 +13,10 @@ const DEMO_GAPS = [
     { skill: 'TypeScript Advanced', priority: 'Low', action: 'Read Docs' },
 ]
 
-interface Dep { skill: string; prerequisites: string[] }
-
 export default function SkillGap() {
     const { analysis } = useResume()
     const [deps, setDeps] = useState<Record<string, string[]>>({})
+    const [showGraph, setShowGraph] = useState(true)
 
     useEffect(() => {
         fetch(`${BASE}/interview/dependencies`)
@@ -40,20 +40,54 @@ export default function SkillGap() {
         ]
         : DEMO_GAPS
 
-    const getPrereqs = (skillName: string): string[] => {
-        const key = skillName.toLowerCase()
-        return deps[key] ?? []
-    }
+    const getPrereqs = (skillName: string): string[] =>
+        deps[skillName.toLowerCase()] ?? []
+
+    const detected = analysis?.detected_skills ?? ['python', 'react', 'git', 'sql', 'javascript', 'flask']
+    const coreGaps = analysis?.missing_core_skills ?? ['docker', 'system design', 'ci/cd']
+    const optGaps = analysis?.missing_optional_skills ?? ['graphql', 'aws', 'typescript']
 
     return (
         <div className="page-content">
             <div className="page-header">
                 <div className="page-title">Skill Gap Analysis</div>
-                <div className="page-subtitle">Identify and close your skill gaps — with learning paths</div>
+                <div className="page-subtitle">
+                    Identify and close your gaps — with live dependency chains
+                </div>
             </div>
 
-            {/* Skill gap list */}
+            {/* ── Skill Dependency Graph ── */}
             <div className="card mb-16">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div>
+                        <div className="card-title" style={{ marginBottom: 2 }}>🕸 Skill Dependency Graph</div>
+                        <div className="card-subtitle">Your skills (green) vs gaps (red/orange) — dashed lines show prerequisites</div>
+                    </div>
+                    <button
+                        className="btn btn--ghost btn--sm"
+                        onClick={() => setShowGraph(v => !v)}
+                    >
+                        {showGraph ? 'Hide Graph' : 'Show Graph'}
+                    </button>
+                </div>
+                {showGraph && (
+                    <SkillGraphViz
+                        detected={detected}
+                        missingCore={coreGaps}
+                        missingOptional={optGaps}
+                        dependencies={deps}
+                    />
+                )}
+                {!analysis && (
+                    <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
+                        ☝ Upload a resume to personalise the graph with your real skills
+                    </div>
+                )}
+            </div>
+
+            {/* ── Skill gap list ── */}
+            <div className="card mb-16">
+                <div className="card-title mb-16">Gap Details</div>
                 {gaps.length === 0 ? (
                     <div className="empty-state">
                         <div className="empty-state__icon">🎉</div>
@@ -74,17 +108,15 @@ export default function SkillGap() {
                                     </div>
                                 </div>
 
-                                {/* Learning path (from dependency graph) */}
                                 {prereqs.length > 0 && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 40, flexWrap: 'wrap' }}>
-                                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Needs first:</span>
+                                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Learn first:</span>
                                         {prereqs.map(p => (
                                             <span key={p} style={{
                                                 fontSize: 11, padding: '2px 8px', borderRadius: 6,
                                                 background: 'rgba(34,211,238,0.08)',
                                                 border: '1px solid rgba(34,211,238,0.2)',
-                                                color: 'var(--cyan)',
-                                                fontWeight: 600,
+                                                color: 'var(--cyan)', fontWeight: 600,
                                             }}>{p}</span>
                                         ))}
                                         <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>→ then {g.skill}</span>
@@ -94,27 +126,6 @@ export default function SkillGap() {
                         )
                     })
                 )}
-            </div>
-
-            {/* Dependency graph legend */}
-            <div className="card">
-                <div className="card-title mb-8">📍 Skill Dependency Guide</div>
-                <div className="card-subtitle mb-12">Prerequisites are loaded from the Skill Graph — learn them in order</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                    {[
-                        { from: 'docker', needs: ['linux', 'bash'] },
-                        { from: 'kubernetes', needs: ['docker', 'linux'] },
-                        { from: 'react', needs: ['javascript', 'html', 'css'] },
-                        { from: 'fastapi', needs: ['python', 'api'] },
-                        { from: 'deep learning', needs: ['machine learning', 'numpy'] },
-                    ].map(({ from, needs }, i) => (
-                        <div key={i} style={{ background: 'var(--bg-input)', borderRadius: 8, padding: '10px 14px', fontSize: 12 }}>
-                            <span style={{ color: 'var(--blue)', fontWeight: 700 }}>{from}</span>
-                            <span style={{ color: 'var(--text-muted)', margin: '0 6px' }}>←</span>
-                            {needs.map(n => <span key={n} style={{ color: 'var(--cyan)', marginRight: 6 }}>{n}</span>)}
-                        </div>
-                    ))}
-                </div>
             </div>
         </div>
     )

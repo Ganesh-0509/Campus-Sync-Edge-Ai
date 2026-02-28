@@ -19,6 +19,7 @@ export interface UploadResult {
     analysis_id: number | null
     filename: string
     db_warning?: string
+    privacy_active?: boolean
 }
 
 export interface PredictResult {
@@ -40,10 +41,11 @@ export interface HealthResult {
 }
 
 // ── Upload resume ─────────────────────────────────────────────
-export async function uploadResume(file: File, role: string): Promise<UploadResult> {
+export async function uploadResume(file: File, role: string, privacyMode: boolean = false): Promise<UploadResult> {
     const fd = new FormData()
     fd.append('file', file)
     fd.append('role', role)
+    fd.append('privacy_mode', String(privacyMode))
     const res = await fetch(`${BASE}/upload`, { method: 'POST', body: fd })
     if (!res.ok) {
         const err = await res.text().catch(() => 'Upload failed')

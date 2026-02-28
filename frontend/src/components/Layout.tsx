@@ -2,8 +2,16 @@ import { NavLink, Outlet } from 'react-router-dom'
 import {
     LayoutDashboard, FileText, BarChart2, ZapOff,
     CheckSquare, MessageSquare, TrendingUp, GitCompare,
-    Building2, Settings
+    Building2, Settings, Search, Bell, Sun, Shield, Cpu
 } from 'lucide-react'
+import { useState, useEffect, createContext, useContext } from 'react'
+import { useAuth } from '../context/AuthContext'
+import { isOnDeviceReady } from '../utils/onDevicePredictor'
+
+/* ─── Privacy Mode Context ──────────────────────────── */
+interface PrivacyCtx { privacy: boolean; setPrivacy: (v: boolean) => void }
+export const PrivacyContext = createContext<PrivacyCtx>({ privacy: false, setPrivacy: () => { } })
+export function usePrivacy() { return useContext(PrivacyContext) }
 
 const NAV_ITEMS = [
     { to: '/dashboard', label: 'Dashboard Overview', Icon: LayoutDashboard },
@@ -19,46 +27,79 @@ const NAV_ITEMS = [
 ]
 
 export default function Layout() {
-    return (
-        <div className="app-shell">
-            {/* ── Sidebar ── */}
-            <aside className="sidebar">
-                <div className="sidebar__logo">
-                    <div className="sidebar__logo-icon">⚡</div>
-                    <div className="sidebar__logo-name">CampusSync</div>
-                    <div className="sidebar__logo-sub">Edge AI</div>
-                </div>
-                <nav className="sidebar__nav">
-                    {NAV_ITEMS.map(({ to, label, Icon }) => (
-                        <NavLink
-                            key={to}
-                            to={to}
-                            className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
-                        >
-                            <Icon className="nav-item__icon" size={16} />
-                            {label}
-                        </NavLink>
-                    ))}
-                </nav>
-            </aside>
+    const [privacy, setPrivacy] = useState(() => localStorage.getItem('cse_privacy') === 'true')
 
-            {/* ── Main ── */}
-            <div className="main-area">
-                <Navbar />
-                <main>
-                    <Outlet />
-                </main>
+    useEffect(() => { localStorage.setItem('cse_privacy', String(privacy)) }, [privacy])
+
+    return (
+        <PrivacyContext.Provider value={{ privacy, setPrivacy }}>
+            <div className="app-shell">
+                {/* ── Sidebar ── */}
+                <aside className="sidebar">
+                    <div className="sidebar__logo">
+                        <div className="sidebar__logo-icon">⚡</div>
+                        <div className="sidebar__logo-name">CampusSync</div>
+                        <div className="sidebar__logo-sub">Edge AI</div>
+                    </div>
+
+                    {/* Privacy Mode indicator in sidebar */}
+                    {privacy && (
+                        <div style={{
+                            margin: '8px 12px', padding: '8px 10px',
+                            background: 'rgba(34,197,94,0.08)',
+                            border: '1px solid rgba(34,197,94,0.2)',
+                            borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6,
+                        }}>
+                            <Shield size={11} color="var(--green)" />
+                            <span style={{ fontSize: 10, color: 'var(--green)', fontWeight: 600, lineHeight: 1.2 }}>
+                                Privacy Mode<br />
+                                <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>Local only</span>
+                            </span>
+                        </div>
+                    )}
+
+                    <nav className="sidebar__nav">
+                        {NAV_ITEMS.map(({ to, label, Icon }) => (
+                            <NavLink
+                                key={to}
+                                to={to}
+                                className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+                            >
+                                <Icon className="nav-item__icon" size={16} />
+                                {label}
+                            </NavLink>
+                        ))}
+                    </nav>
+                </aside>
+
+                {/* ── Main ── */}
+                <div className="main-area">
+                    <Navbar privacy={privacy} setPrivacy={setPrivacy} />
+                    <main>
+                        <Outlet />
+                    </main>
+                </div>
             </div>
-        </div>
+        </PrivacyContext.Provider>
     )
 }
 
-/* ── Inline Navbar to avoid extra file ──────────────────────── */
-import { Search, Bell, Sun } from 'lucide-react'
-import { useState } from 'react'
+/* ── Navbar ─────────────────────────────────────────── */
+function Navbar({ privacy, setPrivacy }: { privacy: boolean; setPrivacy: (v: boolean) => void }) {
+    const { user } = useAuth()
+    const [onDevice, setOnDevice] = useState(false)
+    const initials = user?.name
+        ? user.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)
+        : 'U'
 
-function Navbar() {
-    const [dark, setDark] = useState(true)
+    useEffect(() => {
+        // Check if ONNX models loaded (non-blocking)
+        const check = setInterval(() => {
+            if (isOnDeviceReady()) { setOnDevice(true); clearInterval(check) }
+        }, 2000)
+        return () => clearInterval(check)
+    }, [])
+
     return (
         <header className="navbar">
             <div className="navbar__search">
@@ -66,14 +107,38 @@ function Navbar() {
                 <input placeholder="Search skills, features..." />
                 <span className="navbar__shortcut">⌘K</span>
             </div>
+
             <div className="navbar__actions">
-                <button className="navbar__btn" onClick={() => setDark(!dark)} title="Toggle theme">
-                    <Sun size={15} />
+                {/* On-Device badge */}
+                {onDevice && (
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: 5,
+                        padding: '4px 10px', borderRadius: 20,
+                        background: 'rgba(34,197,94,0.10)',
+                        border: '1px solid rgba(34,197,94,0.25)',
+                        fontSize: 11, color: 'var(--green)', fontWeight: 600,
+                    }}>
+                        <Cpu size={10} /> On-Device
+                    </div>
+                )}
+
+                {/* Privacy Mode toggle */}
+                <button
+                    className="navbar__btn"
+                    title={privacy ? 'Privacy Mode ON — click to disable' : 'Enable Privacy Mode (local-only)'}
+                    onClick={() => setPrivacy(!privacy)}
+                    style={{ color: privacy ? 'var(--green)' : undefined }}
+                >
+                    <Shield size={15} />
                 </button>
+
                 <button className="navbar__btn" title="Notifications">
                     <Bell size={15} />
                 </button>
-                <div className="navbar__avatar" title="Profile">G</div>
+
+                <div className="navbar__avatar" title={user?.name ?? 'Profile'}>
+                    {initials}
+                </div>
             </div>
         </header>
     )

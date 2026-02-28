@@ -15,6 +15,8 @@ import ProgressTracking from './pages/ProgressTracking'
 import ResumeComparison from './pages/ResumeComparison'
 import IndustryAlignment from './pages/IndustryAlignment'
 import Settings from './pages/Settings'
+import { initOnDevice } from './utils/onDevicePredictor'
+import { useEffect } from 'react'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
     const { user } = useAuth()
@@ -56,6 +58,10 @@ function AppRoutes() {
 }
 
 export default function App() {
+    useEffect(() => {
+        initOnDevice().catch(e => console.error('ONNX init failed:', e))
+    }, [])
+
     return (
         <AuthProvider>
             <ResumeProvider>

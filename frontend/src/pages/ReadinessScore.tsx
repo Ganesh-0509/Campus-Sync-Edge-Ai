@@ -1,5 +1,6 @@
 import { useResume, getReadinessClass } from '../context/ResumeContext'
 import CircularProgress from '../components/CircularProgress'
+import { Cpu, Cloud, Zap } from 'lucide-react'
 
 /*
   Breakdown uses REAL fields from the analysis result.
@@ -14,7 +15,7 @@ const CLASSES = [
 ]
 
 export default function ReadinessScore() {
-    const { analysis } = useResume()
+    const { analysis, prediction } = useResume()
 
     const score = analysis?.final_score ?? 72
     const current = getReadinessClass(score)
@@ -51,6 +52,22 @@ export default function ReadinessScore() {
                         {analysis?.role && <div className="text-muted">for {analysis.role}</div>}
                         {!analysis && <div className="text-muted" style={{ fontSize: 11 }}>Upload a resume to see your real score</div>}
                     </div>
+
+                    {/* AI Inference Badge */}
+                    {prediction && (
+                        <div style={{
+                            marginTop: 4, display: 'flex', alignItems: 'center', gap: 6,
+                            padding: '4px 10px', borderRadius: 20,
+                            background: prediction.model_version.includes('onnx') ? 'rgba(34,197,94,0.1)' : 'rgba(59,130,246,0.1)',
+                            border: `1px solid ${prediction.model_version.includes('onnx') ? 'rgba(34,197,94,0.2)' : 'rgba(59,130,246,0.2)'}`,
+                            fontSize: 11, color: prediction.model_version.includes('onnx') ? 'var(--green)' : 'var(--blue)',
+                            fontWeight: 600
+                        }}>
+                            {prediction.model_version.includes('onnx') ? <Cpu size={12} /> : <Cloud size={12} />}
+                            {prediction.model_version.includes('onnx') ? 'On-Device AI' : 'Cloud AI'}
+                            <span style={{ opacity: 0.6, fontWeight: 400 }}>• {prediction.inference_time_ms}ms</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Breakdown */}

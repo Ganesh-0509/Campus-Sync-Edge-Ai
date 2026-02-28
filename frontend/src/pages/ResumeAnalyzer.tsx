@@ -2,10 +2,13 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useResume } from '../context/ResumeContext'
 import { uploadResume, predictResume, getRoles } from '../api/client'
-import { Upload, FileText, CheckCircle } from 'lucide-react'
+import { Upload, FileText, CheckCircle, Cpu, Shield } from 'lucide-react'
+import { usePrivacy } from '../components/Layout'
+import { predictOnDevice, isOnDeviceReady } from '../utils/onDevicePredictor'
 
 export default function ResumeAnalyzer() {
     const { setAnalysis, setPrediction, analysis } = useResume()
+    const { privacy } = usePrivacy()
     const navigate = useNavigate()
 
     const [roles, setRoles] = useState<string[]>([])
@@ -30,20 +33,46 @@ export default function ResumeAnalyzer() {
         if (!file) return
         setLoading(true); setError('')
         try {
-            const result = await uploadResume(file, role)
+            const result = await uploadResume(file, role, privacy)
             setAnalysis(result)
-            // Also hit ML predict
+
+            const useLocal = privacy || isOnDeviceReady()
+
+            // Also hit ML predict (AI Score)
             try {
-                const pred = await predictResume({
-                    skills: result.detected_skills,
-                    project_score: result.project_score_percent,
-                    ats_score: result.ats_score_percent,
-                    structure_score: result.structure_score_percent,
-                    core_coverage: result.core_coverage_percent,
-                    optional_coverage: result.optional_coverage_percent,
-                })
-                setPrediction(pred)
-            } catch { }
+                if (useLocal && isOnDeviceReady()) {
+                    // ON-DEVICE INFERENCE
+                    const localResult = await predictOnDevice(
+                        result.detected_skills,
+                        result.project_score_percent,
+                        result.ats_score_percent,
+                        result.structure_score_percent,
+                        result.core_coverage_percent,
+                        result.optional_coverage_percent
+                    )
+                    setPrediction({
+                        predicted_role: localResult.predictedRole || result.role,
+                        confidence: 0.95,
+                        resume_score: localResult.score,
+                        weak_areas: result.missing_core_skills.slice(0, 3),
+                        model_version: 'v2.0-onnx',
+                        inference_time_ms: localResult.inferenceMs
+                    })
+                } else {
+                    // SERVER-SIDE INFERENCE
+                    const pred = await predictResume({
+                        skills: result.detected_skills,
+                        project_score: result.project_score_percent,
+                        ats_score: result.ats_score_percent,
+                        structure_score: result.structure_score_percent,
+                        core_coverage: result.core_coverage_percent,
+                        optional_coverage: result.optional_coverage_percent,
+                    })
+                    setPrediction(pred)
+                }
+            } catch (e) {
+                console.warn('ML Prediction failed (fallback to base):', e)
+            }
             navigate('/readiness-score')
         } catch (e: any) {
             setError(e.message || 'Upload failed. Make sure the backend is running on :8000')
