@@ -24,7 +24,22 @@ export async function initOnDevice(): Promise<boolean> {
     try {
         // Dynamic import so it doesn't break SSR / non-ONNX builds
         ort = await import('onnxruntime-web')
-        ort.env.wasm.wasmPaths = '/ort/'   // wasm files in public/ort/
+        // Force single thread to avoid worker resolution issues in dev
+        ort.env.wasm.numThreads = 1
+        // Use full URL to avoid Vite resolution issues
+        const base = window.location.origin + '/ort/'
+        ort.env.wasm.wasmPaths = {
+            'ort-wasm-simd-threaded.jsep.mjs': base + 'ort-wasm-simd-threaded.jsep.js',
+            'ort-wasm-simd-threaded.jsep.wasm': base + 'ort-wasm-simd-threaded.jsep.wasm',
+            'ort-wasm-simd-threaded.wasm': base + 'ort-wasm-simd-threaded.wasm',
+            'ort-wasm-simd-threaded.mjs': base + 'ort-wasm-simd-threaded.js',
+            'ort-wasm-simd-threaded.asyncify.mjs': base + 'ort-wasm-simd-threaded.asyncify.js',
+            'ort-wasm-simd-threaded.asyncify.wasm': base + 'ort-wasm-simd-threaded.asyncify.wasm',
+            'ort-wasm-simd-threaded.jspi.mjs': base + 'ort-wasm-simd-threaded.jspi.js',
+            'ort-wasm-simd-threaded.jspi.wasm': base + 'ort-wasm-simd-threaded.jspi.wasm',
+            'ort-wasm.wasm': base + 'ort-wasm.wasm', // in case it falls back
+            'ort-wasm-simd.wasm': base + 'ort-wasm-simd.wasm',
+        }
 
         // Load vocabulary
         const vocabRes = await fetch('/models/vocabulary_v2_list.json')

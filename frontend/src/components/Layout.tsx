@@ -2,7 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import {
     LayoutDashboard, FileText, BarChart2, ZapOff,
     CheckSquare, MessageSquare, TrendingUp, GitCompare,
-    Building2, Settings, Search, Bell, Sun, Shield, Cpu
+    Building2, Settings, Search, Bell, Sun, Moon, Shield, Cpu
 } from 'lucide-react'
 import { useState, useEffect, createContext, useContext } from 'react'
 import { useAuth } from '../context/AuthContext'
@@ -23,13 +23,24 @@ const NAV_ITEMS = [
     { to: '/progress-tracking', label: 'Progress Tracking', Icon: TrendingUp },
     { to: '/resume-comparison', label: 'Resume Comparison', Icon: GitCompare },
     { to: '/industry-alignment', label: 'Industry Alignment', Icon: Building2 },
+    { to: '/admin', label: 'Admin Portal', Icon: Shield },
     { to: '/settings', label: 'Settings', Icon: Settings },
 ]
 
 export default function Layout() {
     const [privacy, setPrivacy] = useState(() => localStorage.getItem('cse_privacy') === 'true')
+    const [theme, setTheme] = useState(() => localStorage.getItem('cse_theme') || 'dark')
 
     useEffect(() => { localStorage.setItem('cse_privacy', String(privacy)) }, [privacy])
+
+    useEffect(() => {
+        if (theme === 'light') {
+            document.documentElement.classList.add('light-mode')
+        } else {
+            document.documentElement.classList.remove('light-mode')
+        }
+        localStorage.setItem('cse_theme', theme)
+    }, [theme])
 
     return (
         <PrivacyContext.Provider value={{ privacy, setPrivacy }}>
@@ -74,7 +85,7 @@ export default function Layout() {
 
                 {/* ── Main ── */}
                 <div className="main-area">
-                    <Navbar privacy={privacy} setPrivacy={setPrivacy} />
+                    <Navbar privacy={privacy} setPrivacy={setPrivacy} theme={theme} setTheme={setTheme} />
                     <main>
                         <Outlet />
                     </main>
@@ -85,7 +96,7 @@ export default function Layout() {
 }
 
 /* ── Navbar ─────────────────────────────────────────── */
-function Navbar({ privacy, setPrivacy }: { privacy: boolean; setPrivacy: (v: boolean) => void }) {
+function Navbar({ privacy, setPrivacy, theme, setTheme }: { privacy: boolean; setPrivacy: (v: boolean) => void; theme: string; setTheme: (v: string) => void }) {
     const { user } = useAuth()
     const [onDevice, setOnDevice] = useState(false)
     const initials = user?.name
@@ -130,6 +141,15 @@ function Navbar({ privacy, setPrivacy }: { privacy: boolean; setPrivacy: (v: boo
                     style={{ color: privacy ? 'var(--green)' : undefined }}
                 >
                     <Shield size={15} />
+                </button>
+
+                {/* Theme toggle */}
+                <button
+                    className="navbar__btn"
+                    title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                >
+                    {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
                 </button>
 
                 <button className="navbar__btn" title="Notifications">

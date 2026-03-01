@@ -1,293 +1,320 @@
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
+import { getMarketForecast, type ForecastResult } from '../api/client'
 import { useResume } from '../context/ResumeContext'
-import { CheckCircle, Circle, Clock, BookOpen, ExternalLink } from 'lucide-react'
+import { CheckCircle, Circle, Clock, BookOpen, ExternalLink, Lock, Flame, PlayCircle, Trophy, Pin, Sparkles } from 'lucide-react'
+import StudyHub from '../components/StudyHub'
 
 /* ─────────────────────────────────────────────────────────────
-   Resource database per skill — curated, real links
+   Daily Planning Logic: Split skills based on time allocation
 ───────────────────────────────────────────────────────────── */
-const SKILL_RESOURCES: Record<string, { link: string; title: string; time: string }[]> = {
-    'docker': [{ link: 'https://docs.docker.com/get-started/', title: 'Docker Official Quickstart', time: '90 min' }, { link: 'https://www.youtube.com/watch?v=fqMOX6JJhGo', title: 'Docker in 100 Seconds', time: '15 min' }],
-    'kubernetes': [{ link: 'https://kubernetes.io/docs/tutorials/kubernetes-basics/', title: 'K8s Basics', time: '2 hr' }, { link: 'https://www.youtube.com/watch?v=X48VuDVv0do', title: 'K8s Full Course', time: '3 hr' }],
-    'system design': [{ link: 'https://github.com/donnemartin/system-design-primer', title: 'System Design Primer (GitHub)', time: '3 hr' }, { link: 'https://www.youtube.com/watch?v=i53Gi_K3o7I', title: 'System Design Interview Concepts', time: '1 hr' }],
-    'aws': [{ link: 'https://aws.amazon.com/getting-started/', title: 'AWS Getting Started', time: '2 hr' }, { link: 'https://www.youtube.com/watch?v=3hLmDS179YE', title: 'AWS Full Course', time: '2 hr' }],
-    'react': [{ link: 'https://react.dev/learn', title: 'Official React Docs (Learn)', time: '3 hr' }, { link: 'https://www.youtube.com/watch?v=Ke90Tje7VS0', title: 'React JS Crash Course', time: '1.5 hr' }],
-    'typescript': [{ link: 'https://www.typescriptlang.org/docs/handbook/intro.html', title: 'TypeScript Handbook', time: '2 hr' }, { link: 'https://www.youtube.com/watch?v=BCg4U1FzODs', title: 'TypeScript Crash Course', time: '1 hr' }],
-    'python': [{ link: 'https://docs.python.org/3/tutorial/', title: 'Python Official Tutorial', time: '3 hr' }, { link: 'https://www.youtube.com/watch?v=eWRfhZUzrAc', title: 'Python Full Course FCC', time: '4 hr' }],
-    'sql': [{ link: 'https://mode.com/sql-tutorial/', title: 'Mode Analytics SQL Tutorial', time: '2 hr' }, { link: 'https://sqlzoo.net/', title: 'SQLZoo Interactive Practice', time: '2 hr' }],
-    'machine learning': [{ link: 'https://developers.google.com/machine-learning/crash-course', title: 'Google ML Crash Course', time: '15 hr' }, { link: 'https://www.youtube.com/watch?v=i_LwzRVP7bg', title: 'ML with Python (FCC)', time: '2 hr' }],
-    'deep learning': [{ link: 'https://www.deeplearning.ai/courses/deep-learning-specialization/', title: 'DeepLearning.AI Specialization', time: '40 hr' }, { link: 'https://www.youtube.com/watch?v=ER2It2mIagI', title: 'Deep Learning Fundamentals', time: '2 hr' }],
-    'ci/cd': [{ link: 'https://docs.github.com/en/actions/quickstart', title: 'GitHub Actions Quickstart', time: '1 hr' }, { link: 'https://www.youtube.com/watch?v=mFFXuXjVgkU', title: 'CI/CD Pipeline Tutorial', time: '1 hr' }],
-    'linux': [{ link: 'https://linuxjourney.com/', title: 'Linux Journey (Interactive)', time: '3 hr' }, { link: 'https://www.youtube.com/watch?v=ZtqBQ68cfJc', title: 'Linux Command Line Basics', time: '1.5 hr' }],
-    'terraform': [{ link: 'https://developer.hashicorp.com/terraform/tutorials', title: 'Terraform Tutorials', time: '2 hr' }, { link: 'https://www.youtube.com/watch?v=l5k1ai_GBDE', title: 'Terraform Crash Course', time: '2 hr' }],
-    'graphql': [{ link: 'https://graphql.org/learn/', title: 'GraphQL Official Docs', time: '2 hr' }, { link: 'https://www.youtube.com/watch?v=ed8SzALpx1Q', title: 'GraphQL Full Tutorial', time: '1.5 hr' }],
-    'microservices': [{ link: 'https://microservices.io/patterns/index.html', title: 'Microservices Patterns', time: '2 hr' }, { link: 'https://www.youtube.com/watch?v=lL_j7ilk7rc', title: 'Microservices Architecture', time: '1 hr' }],
-    'testing': [{ link: 'https://jestjs.io/docs/getting-started', title: 'Jest Getting Started', time: '1 hr' }, { link: 'https://www.youtube.com/watch?v=Jv2uxzhPFl4', title: 'Testing JavaScript Apps', time: '1 hr' }],
-    'dsa': [{ link: 'https://neetcode.io/', title: 'NeetCode Roadmap (Free)', time: '20 hr' }, { link: 'https://www.youtube.com/watch?v=pkYVOmU3MgA', title: 'DS & Algorithms Crash Course', time: '2 hr' }],
-    'api': [{ link: 'https://restfulapi.net/', title: 'REST API Design Guide', time: '1 hr' }, { link: 'https://www.youtube.com/watch?v=GZvSYJDk-us', title: 'REST API Tutorial', time: '1 hr' }],
-    'git': [{ link: 'https://learngitbranching.js.org/', title: 'Learn Git Branching (Interactive)', time: '1.5 hr' }, { link: 'https://www.youtube.com/watch?v=RGOj5yH7evk', title: 'Git & GitHub Crash Course', time: '1 hr' }],
-    'redis': [{ link: 'https://redis.io/learn', title: 'Redis Learn', time: '2 hr' }, { link: 'https://www.youtube.com/watch?v=jgpVdJB2sKQ', title: 'Redis Crash Course', time: '1 hr' }],
-    'mongodb': [{ link: 'https://www.mongodb.com/docs/manual/tutorial/getting-started/', title: 'MongoDB Quickstart', time: '1.5 hr' }, { link: 'https://www.youtube.com/watch?v=-bt_y4Loofg', title: 'MongoDB Crash Course', time: '1 hr' }],
-    'node.js': [{ link: 'https://nodejs.org/en/learn/getting-started/introduction-to-nodejs', title: 'Node.js Official Docs', time: '2 hr' }, { link: 'https://www.youtube.com/watch?v=f2EqECiTBL8', title: 'Node.js Full Course', time: '2 hr' }],
-}
-
-const DEFAULT_RESOURCE = [
-    { link: 'https://www.youtube.com/results?search_query=', title: 'YouTube Tutorial', time: '1 hr' },
-    { link: 'https://roadmap.sh', title: 'Roadmap.sh Guide', time: '30 min' },
-]
-
-/* Generate a real dynamic improvement plan from missing skills */
-function buildPlan(
-    missingCore: string[],
-    missingOptional: string[],
-    role: string,
-): Array<{
-    days: string
+interface PlanItem {
+    id: string
     title: string
     skill: string
     priority: 'Critical' | 'High' | 'Medium'
-    duration: string
+    level: number
+    durationMinutes: number
     resources: { link: string; title: string; time: string }[]
     subtasks: string[]
-}> {
-    const items: ReturnType<typeof buildPlan> = []
-    let day = 1
+}
 
-    const addItem = (
-        skill: string,
-        priority: 'Critical' | 'High' | 'Medium',
-        days: number,
-    ) => {
-        const key = skill.toLowerCase()
-        const resources = SKILL_RESOURCES[key] ?? DEFAULT_RESOURCE.map(r => ({
-            ...r,
-            link: key === 'youtube tutorial' ? `https://www.youtube.com/results?search_query=${encodeURIComponent(skill)}` : r.link,
-        }))
+function buildAdaptivePlan(
+    missingCore: string[],
+    missingOptional: string[]
+): PlanItem[] {
+    const items: PlanItem[] = []
 
-        const subtasks = [
-            `Read/watch the first resource for ${skill}`,
-            `Complete 3 practice exercises`,
-            `Add ${skill} to your resume project`,
-        ]
-
+    // Level 1: Critical Core (2h each)
+    missingCore.slice(0, 3).forEach((s, i) => {
         items.push({
-            days: day === day + days - 1 ? `Day ${day}` : `Day ${day}–${day + days - 1}`,
-            title: `Master ${skill.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}`,
-            skill,
-            priority,
-            duration: `${days * 90} min est.`,
-            resources,
-            subtasks,
+            id: `core-${i}`,
+            title: `Master ${s}`,
+            skill: s,
+            priority: 'Critical',
+            level: 1,
+            durationMinutes: 120,
+            resources: [],
+            subtasks: [`Complete AI Study Guide for ${s}`, `Pass ${s} Verification Quiz`]
         })
-        day += days
-    }
+    })
 
-    // Critical: missing core skills (2 days each)
-    missingCore.slice(0, 3).forEach(s => addItem(s, 'Critical', 2))
+    // Level 2: High Priority (1.5h each)
+    missingCore.slice(3, 6).forEach((s, i) => {
+        items.push({
+            id: `high-${i}`,
+            title: `Deep Dive: ${s}`,
+            skill: s,
+            priority: 'High',
+            level: 2,
+            durationMinutes: 90,
+            resources: [],
+            subtasks: [`Understand Advanced ${s} concepts`, `Implement a project using ${s}`]
+        })
+    })
 
-    // High: remaining core (1 day each)
-    missingCore.slice(3, 5).forEach(s => addItem(s, 'High', 1))
-
-    // Medium: optional skills (1 day each)
-    missingOptional.slice(0, 2).forEach(s => addItem(s, 'Medium', 1))
-
-    // Final day: Integration project
-    items.push({
-        days: `Day ${day}`,
-        title: `Build a ${role} Portfolio Project`,
-        skill: 'project',
-        priority: 'High',
-        duration: '3–4 hr',
-        resources: [
-            { link: 'https://github.com/practical-tutorials/project-based-learning', title: 'Project-Based Learning (GitHub)', time: '3–4 hr' },
-            { link: 'https://www.youtube.com/results?search_query=' + encodeURIComponent(role + ' project tutorial'), title: `${role} Project Tutorial`, time: '2 hr' },
-        ],
-        subtasks: [
-            `Apply the skills you learned this week`,
-            `Build one complete feature end-to-end`,
-            `Push to GitHub with a clear README`,
-            `Add the project to your resume`,
-        ],
+    // Level 3: Optional/Medium (1h each)
+    missingOptional.slice(0, 4).forEach((s, i) => {
+        items.push({
+            id: `med-${i}`,
+            title: `Explore ${s}`,
+            skill: s,
+            priority: 'Medium',
+            level: 3,
+            durationMinutes: 60,
+            resources: [],
+            subtasks: [`Basic syntax and use cases of ${s}`, `Compare ${s} with alternatives`]
+        })
     })
 
     return items
 }
 
-const LS_KEY = 'cse_improvement_checks'
-
 export default function ImprovementPlan() {
-    const { analysis } = useResume()
+    const { analysis, completedTasks, masteredSkills, dailyCommitment, setDailyCommitment, markSkillMastered } = useResume()
+    const location = useLocation()
+    const highlightSkill = (location.state as any)?.highlightSkill
 
     const role = analysis?.role ?? 'Software Developer'
-    const missingCore = analysis?.missing_core_skills ?? ['System Design', 'Docker', 'DSA', 'CI/CD', 'TypeScript']
+    const missingCore = analysis?.missing_core_skills ?? ['System Design', 'Docker', 'DSA']
     const missingOpt = analysis?.missing_optional_skills ?? ['React', 'AWS']
-    const plan = buildPlan(missingCore, missingOpt, role)
 
-    // Persist checkboxes per plan key
-    const planKey = [role, ...missingCore.slice(0, 3)].join('|')
-    const [checks, setChecks] = useState<Record<string, boolean>>(() => {
-        try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}') } catch { return {} }
-    })
-    const [expanded, setExpanded] = useState<number | null>(null)
+    const [plan] = useState(() => buildAdaptivePlan(missingCore, missingOpt))
+    const [activeStudy, setActiveStudy] = useState<string | null>(null)
+    const [aiForecast, setAiForecast] = useState<ForecastResult | null>(null)
+    const [loading, setLoading] = useState(false)
 
     useEffect(() => {
-        localStorage.setItem(LS_KEY, JSON.stringify(checks))
-    }, [checks])
+        setLoading(true)
+        getMarketForecast(role, missingCore).then(setAiForecast).catch(() => { }).finally(() => setLoading(false))
+    }, [role])
 
-    const toggle = (key: string) => setChecks(c => ({ ...c, [key]: !c[key] }))
-    const isChecked = (i: number) => !!checks[`${planKey}|${i}`]
-
-    const completedCount = plan.filter((_, i) => isChecked(i)).length
-    const completionPct = Math.round((completedCount / plan.length) * 100)
-
-    const priorityColor: Record<string, string> = {
-        Critical: 'var(--red)',
-        High: 'var(--orange)',
-        Medium: 'var(--blue)',
+    // Level-based locking logic
+    const getLevelStatus = (level: number) => {
+        if (level === 1) return 'open'
+        const prevLevelItems = plan.filter(p => p.level === level - 1)
+        const completedPrev = prevLevelItems.every(p => masteredSkills.includes(p.skill.toLowerCase()))
+        return completedPrev ? 'open' : 'locked'
     }
+
+    // Daily distribution
+    const distributedPlan: Array<{ day: number; tasks: PlanItem[] }> = []
+    let currentDay = 1
+    let dayMinutes = 0
+    const maxMinutes = dailyCommitment * 60
+
+    plan.forEach(item => {
+        if (dayMinutes + item.durationMinutes > maxMinutes && distributedPlan.length > 0) {
+            currentDay++
+            dayMinutes = 0
+        }
+
+        let dayGroup = distributedPlan.find(d => d.day === currentDay)
+        if (!dayGroup) {
+            dayGroup = { day: currentDay, tasks: [] }
+            distributedPlan.push(dayGroup)
+        }
+        dayGroup.tasks.push(item)
+        dayMinutes += item.durationMinutes
+    })
+
+    const totalMastered = plan.filter(p => masteredSkills.includes(p.skill.toLowerCase())).length
+    const progressPct = Math.round((totalMastered / plan.length) * 100)
 
     return (
         <div className="page-content">
-            <div className="page-header">
-                <div className="page-title">Improvement Plan</div>
-                <div className="page-subtitle">
-                    Personalized roadmap for <strong style={{ color: 'var(--cyan)' }}>{role}</strong>
-                    {' '}based on your resume analysis • {plan.length} tasks
-                </div>
-            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 32, alignItems: 'start' }}>
+                <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
+                        <div>
+                            <h1 className="page-title">Adaptive Learning Path</h1>
+                            <p className="page-subtitle">Personalized {role} roadmap powered by AI</p>
+                        </div>
 
-            {/* Progress bar */}
-            <div className="card mb-16">
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, alignItems: 'center' }}>
-                    <div className="card-title" style={{ marginBottom: 0 }}>Overall Progress</div>
-                    <span style={{ fontSize: 20, fontWeight: 800, color: completionPct >= 80 ? 'var(--green)' : 'var(--blue)', letterSpacing: -1 }}>{completionPct}%</span>
-                </div>
-                <div className="progress-track" style={{ height: 10 }}>
-                    <div className="progress-fill progress-fill--green" style={{ width: `${completionPct}%`, transition: 'width 0.6s ease' }} />
-                </div>
-                <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
-                    {completedCount} of {plan.length} tasks completed
-                    {!analysis && <span style={{ color: 'var(--orange)', marginLeft: 8 }}>⚠ Upload a resume to personalise this plan</span>}
-                </div>
-            </div>
-
-            {/* Plan items */}
-            <div className="card">
-                {plan.map((item, i) => {
-                    const checked = isChecked(i)
-                    const open = expanded === i
-
-                    return (
-                        <div
-                            key={i}
-                            style={{
-                                borderBottom: i < plan.length - 1 ? '1px solid var(--border)' : 'none',
-                                paddingBottom: 16, marginBottom: 16,
-                            }}
-                        >
-                            {/* Row */}
-                            <div
-                                style={{ display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer' }}
-                                onClick={() => setExpanded(open ? null : i)}
+                        <div className="card card-sm" style={{ display: 'flex', alignItems: 'center', gap: 16, background: 'rgba(59, 130, 246, 0.05)' }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>DAILY COMMITMENT</div>
+                            <select
+                                value={dailyCommitment}
+                                onChange={(e) => setDailyCommitment(Number(e.target.value))}
+                                style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 6, color: 'white', padding: '4px 8px' }}
                             >
-                                {/* Checkbox */}
-                                <div
-                                    onClick={e => { e.stopPropagation(); toggle(`${planKey}|${i}`) }}
-                                    style={{ flexShrink: 0, marginTop: 2, cursor: 'pointer' }}
-                                >
-                                    {checked
-                                        ? <CheckCircle size={20} color="var(--green)" />
-                                        : <Circle size={20} color="var(--text-muted)" />
-                                    }
-                                </div>
+                                <option value={1}>1 Hour / day</option>
+                                <option value={2}>2 Hours / day</option>
+                                <option value={4}>4 Hours / day</option>
+                                <option value={8}>Full-time (8h)</option>
+                            </select>
+                        </div>
+                    </div>
 
-                                {/* Content */}
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-                                        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{item.days}</span>
-                                        <span style={{ fontSize: 11, padding: '1px 8px', borderRadius: 10, background: `${priorityColor[item.priority]}18`, color: priorityColor[item.priority], fontWeight: 600 }}>
-                                            {item.priority}
-                                        </span>
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)' }}>
-                                            <Clock size={10} />{item.duration}
-                                        </span>
+                    {/* AI Insights Card */}
+                    {aiForecast && (
+                        <div className="hero" style={{ padding: '24px', marginBottom: 24, border: '1px solid rgba(34, 197, 94, 0.2)' }}>
+                            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                                <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(34, 197, 94, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📈</div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                        <span className="badge badge--low">AI MARKET FORECAST</span>
+                                        <span style={{ fontSize: 13, color: 'var(--green)', fontWeight: 700 }}>+{aiForecast.growth_pct}% Opportunity</span>
                                     </div>
-                                    <div style={{
-                                        fontSize: 14, fontWeight: 600, color: checked ? 'var(--text-muted)' : 'var(--text-primary)',
-                                        textDecoration: checked ? 'line-through' : 'none',
-                                        opacity: checked ? 0.6 : 1,
-                                    }}>
-                                        {item.title}
-                                    </div>
+                                    <p style={{ margin: 0, fontSize: 14, color: 'var(--text-primary)' }}>{aiForecast.summary}</p>
                                 </div>
-
-                                {/* Expand chevron */}
-                                <div style={{ color: 'var(--text-muted)', fontSize: 16, transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'none', flexShrink: 0 }}>▾</div>
                             </div>
+                        </div>
+                    )}
 
-                            {/* Expanded panel */}
-                            {open && (
-                                <div style={{ marginLeft: 32, marginTop: 12 }}>
-                                    {/* Sub-tasks */}
-                                    <div style={{ marginBottom: 12 }}>
-                                        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>
-                                            <BookOpen size={10} style={{ marginRight: 4 }} />Tasks
-                                        </div>
-                                        {item.subtasks.map((task, ti) => (
-                                            <div key={ti} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--blue)', flexShrink: 0 }} />
-                                                <span style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.4 }}>{task}</span>
-                                            </div>
-                                        ))}
+                    {/* Roadmap */}
+                    <div className="roadmap-container">
+                        {distributedPlan.map(({ day, tasks }) => (
+                            <div key={day} className="day-block" style={{ marginBottom: 32 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                                    <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--blue)', fontWeight: 800, fontSize: 12 }}>
+                                        D{day}
                                     </div>
+                                    <div style={{ fontSize: 16, fontWeight: 700 }}>Learning Schedule</div>
+                                    <div style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)' }}>
+                                        {tasks.reduce((acc, t) => acc + t.durationMinutes, 0)} mins total
+                                    </div>
+                                </div>
 
-                                    {/* Resources */}
-                                    <div>
-                                        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>
-                                            <ExternalLink size={10} style={{ marginRight: 4 }} />Learning Resources
-                                        </div>
-                                        {item.resources.map((r, ri) => (
-                                            <a
-                                                key={ri}
-                                                href={r.link}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
+                                <div className="tasks-grid" style={{ display: distributedPlan.length > 1 ? 'grid' : 'block', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+                                    {tasks.map(task => {
+                                        const status = getLevelStatus(task.level)
+                                        const isMastered = masteredSkills.includes(task.skill.toLowerCase())
+                                        const isLocked = status === 'locked' && !isMastered
+
+                                        return (
+                                            <div
+                                                key={task.id}
+                                                className={`card task-card ${isLocked ? 'locked' : ''} ${isMastered ? 'completed' : ''}`}
                                                 style={{
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                                    padding: '8px 12px', marginBottom: 6, borderRadius: 8,
-                                                    background: 'var(--bg-input)', border: '1px solid var(--border)',
-                                                    textDecoration: 'none', transition: 'border-color 0.15s',
+                                                    position: 'relative', opacity: isLocked ? 0.5 : 1, transition: 'all 0.3s',
+                                                    border: isMastered ? '1px solid var(--green)' : highlightSkill === task.skill ? '2px solid var(--blue)' : '1px solid var(--border)',
+                                                    background: isMastered ? 'rgba(34, 197, 94, 0.05)' : 'var(--bg-card)'
                                                 }}
-                                                onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--blue)')}
-                                                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
                                             >
-                                                <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>{r.title}</span>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.time}</span>
-                                                    <ExternalLink size={10} color="var(--blue)" />
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                                                    <span className={`badge ${task.priority === 'Critical' ? 'badge--high' : task.priority === 'High' ? 'badge--medium' : 'badge--blue'}`}>
+                                                        {task.priority}
+                                                    </span>
+                                                    <span style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-muted)' }}>
+                                                        <Clock size={12} /> {task.durationMinutes}m
+                                                    </span>
                                                 </div>
-                                            </a>
-                                        ))}
-                                    </div>
+
+                                                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>{task.title}</h3>
+
+                                                <div style={{ marginBottom: 16 }}>
+                                                    {task.subtasks.map((st, si) => (
+                                                        <div key={si} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                                                            <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--blue)' }} /> {st}
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {isLocked ? (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>
+                                                        <Lock size={14} /> Level {task.level} Locked
+                                                    </div>
+                                                ) : isMastered ? (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--green)', fontSize: 13, fontWeight: 700 }}>
+                                                        <Trophy size={16} /> Verified Mastery
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        className="btn btn--primary btn--sm"
+                                                        style={{ width: '100%', justifyContent: 'center' }}
+                                                        onClick={() => setActiveStudy(task.skill)}
+                                                    >
+                                                        <PlayCircle size={16} /> Start AI Study Hub
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Study Hub Overlay */}
+
+                </div>
+
+                {/* ── Knowledge Repository Sidebar ── */}
+                <aside style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    <div className="card" style={{ padding: 20, background: 'rgba(59, 130, 246, 0.03)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                            <Pin size={18} className="text-blue" />
+                            <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>Pinned Library</h3>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {JSON.parse(localStorage.getItem('pinned_notes') || '[]').length > 0 ? (
+                                JSON.parse(localStorage.getItem('pinned_notes') || '[]').map((s: string) => (
+                                    <button
+                                        key={s}
+                                        className="ws-nav-item"
+                                        style={{ height: 'auto', textAlign: 'left', background: 'rgba(255,255,255,0.02)', padding: '10px 12px' }}
+                                        onClick={() => setActiveStudy(s)}
+                                    >
+                                        <BookOpen size={14} className="text-blue" />
+                                        <span style={{ fontSize: 12, fontWeight: 600 }}>{s}</span>
+                                    </button>
+                                ))
+                            ) : (
+                                <div style={{ textAlign: 'center', padding: '20px 0', opacity: 0.4 }}>
+                                    <p style={{ fontSize: 11 }}>Save notes to see them here.</p>
                                 </div>
                             )}
                         </div>
-                    )
-                })}
+                    </div>
+
+                    <div className="card" style={{ padding: 20, background: 'rgba(34, 211, 238, 0.03)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                            <Sparkles size={18} style={{ color: 'var(--cyan)' }} />
+                            <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>AI Tutor Tip</h3>
+                        </div>
+                        <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                            Focus on "Critical" skills first to maximize your Placement Readiness score upgrade.
+                        </p>
+                    </div>
+                </aside>
             </div>
 
-            {/* Reset button */}
-            <div style={{ textAlign: 'right', marginTop: 12 }}>
-                <button
-                    className="btn btn--ghost btn--sm"
-                    onClick={() => {
-                        const cleared: Record<string, boolean> = {}
-                        localStorage.setItem(LS_KEY, JSON.stringify(cleared))
-                        setChecks(cleared)
-                    }}
-                >
-                    Reset Progress
-                </button>
+            {/* Global Stats Footer */}
+            <div className="card" style={{ marginTop: 40, background: 'linear-gradient(90deg, #1e293b, #0d1117)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--blue)' }}>{progressPct}%</div>
+                        <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Roadmap Progress</div>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <div className="progress-track" style={{ height: 10 }}>
+                            <div className="progress-fill progress-fill--blue" style={{ width: `${progressPct}%` }} />
+                        </div>
+                        <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>
+                            You have verified <strong style={{ color: 'var(--blue)' }}>{totalMastered}</strong> critical skill gaps in your profile.
+                        </p>
+                    </div>
+                    <div style={{ width: 1, height: 40, background: 'var(--border)' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Flame size={20} color="var(--orange)" />
+                        <div>
+                            <div style={{ fontSize: 14, fontWeight: 700 }}>2 Day Streak</div>
+                            <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Keep going!</div>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            {/* Study Hub Overlay */}
+            {activeStudy && (
+                <StudyHub
+                    skill={activeStudy}
+                    onClose={() => setActiveStudy(null)}
+                    onVerified={(s) => markSkillMastered(s.toLowerCase())}
+                />
+            )}
         </div>
     )
 }

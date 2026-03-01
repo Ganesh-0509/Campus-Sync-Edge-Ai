@@ -1,20 +1,14 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useResume } from '../context/ResumeContext'
 import { BarChart2 } from 'lucide-react'
 import SkillGraphViz from '../components/SkillGraphViz'
 
 const BASE = 'http://localhost:8000'
 
-const DEMO_GAPS = [
-    { skill: 'System Design', priority: 'High', action: 'Start Course' },
-    { skill: 'Docker & Kubernetes', priority: 'High', action: 'Practice Lab' },
-    { skill: 'GraphQL', priority: 'Medium', action: 'Tutorial' },
-    { skill: 'CI/CD Pipelines', priority: 'Medium', action: 'Hands-on' },
-    { skill: 'TypeScript Advanced', priority: 'Low', action: 'Read Docs' },
-]
-
 export default function SkillGap() {
-    const { analysis } = useResume()
+    const navigate = useNavigate()
+    const { analysis, masteredSkills } = useResume()
     const [deps, setDeps] = useState<Record<string, string[]>>({})
     const [showGraph, setShowGraph] = useState(true)
 
@@ -25,34 +19,44 @@ export default function SkillGap() {
             .catch(() => { })
     }, [])
 
-    const gaps: Array<{ skill: string; priority: string; action: string }> = analysis
+    const coreMissing = (analysis?.missing_core_skills ?? []).filter((s: string) => !masteredSkills.includes(s))
+    const optMissing = (analysis?.missing_optional_skills ?? []).filter((s: string) => !masteredSkills.includes(s))
+
+    const gaps = analysis
         ? [
-            ...(analysis.missing_core_skills ?? []).map(s => ({
-                skill: s.charAt(0).toUpperCase() + s.slice(1),
-                priority: 'High',
-                action: 'Start Course',
+            ...coreMissing.map((s: string) => ({
+                skill: s,
+                priority: 'Critical' as const,
+                action: 'Start Learning',
             })),
-            ...(analysis.missing_optional_skills ?? []).map((s, i) => ({
-                skill: s.charAt(0).toUpperCase() + s.slice(1),
-                priority: i < 2 ? 'Medium' : 'Low',
-                action: i < 2 ? 'Tutorial' : 'Read Docs',
+            ...optMissing.map((s: string, i: number) => ({
+                skill: s,
+                priority: i < 2 ? 'High' as const : 'Medium' as const,
+                action: 'Explore',
             })),
         ]
-        : DEMO_GAPS
+        : []
 
     const getPrereqs = (skillName: string): string[] =>
         deps[skillName.toLowerCase()] ?? []
 
-    const detected = analysis?.detected_skills ?? ['python', 'react', 'git', 'sql', 'javascript', 'flask']
-    const coreGaps = analysis?.missing_core_skills ?? ['docker', 'system design', 'ci/cd']
-    const optGaps = analysis?.missing_optional_skills ?? ['graphql', 'aws', 'typescript']
+    const detected = [...(analysis?.detected_skills ?? []), ...masteredSkills]
+    const coreGaps = coreMissing
+    const optGaps = optMissing
+
+    const handleAction = (skill: string) => {
+        navigate('/improvement-plan', { state: { highlightSkill: skill } })
+    }
+
+    const role = analysis?.role ?? 'Software Developer'
 
     return (
         <div className="page-content">
+            {/* ── Page Header ── */}
             <div className="page-header">
-                <div className="page-title">Skill Gap Analysis</div>
+                <div className="page-title">Adaptive Gap Analysis</div>
                 <div className="page-subtitle">
-                    Identify and close your gaps — with live dependency chains
+                    Prioritizing <span style={{ color: 'var(--red)', fontWeight: 700 }}>Critical</span> gaps for your {role} career path
                 </div>
             </div>
 
@@ -61,7 +65,7 @@ export default function SkillGap() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                     <div>
                         <div className="card-title" style={{ marginBottom: 2 }}>🕸 Skill Dependency Graph</div>
-                        <div className="card-subtitle">Your skills (green) vs gaps (red/orange) — dashed lines show prerequisites</div>
+                        <div className="card-subtitle">Your skills (green) vs gaps (red/orange)</div>
                     </div>
                     <button
                         className="btn btn--ghost btn--sm"
@@ -78,20 +82,15 @@ export default function SkillGap() {
                         dependencies={deps}
                     />
                 )}
-                {!analysis && (
-                    <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
-                        ☝ Upload a resume to personalise the graph with your real skills
-                    </div>
-                )}
             </div>
 
-            {/* ── Skill gap list ── */}
+            {/* ── Active Gaps ── */}
             <div className="card mb-16">
-                <div className="card-title mb-16">Gap Details</div>
+                <div className="card-title mb-16">Active Priority Gaps</div>
                 {gaps.length === 0 ? (
                     <div className="empty-state">
                         <div className="empty-state__icon">🎉</div>
-                        <div className="empty-state__text">No critical skill gaps detected for your target role.</div>
+                        <div className="empty-state__text">No critical skill gaps detected. You are ready for placement!</div>
                     </div>
                 ) : (
                     gaps.map((g, i) => {
@@ -103,23 +102,21 @@ export default function SkillGap() {
                                     <BarChart2 size={14} color="var(--blue)" style={{ flexShrink: 0 }} />
                                     <span className="gap-row__name">{g.skill}</span>
                                     <div className="gap-row__actions">
-                                        <span className={`badge badge--${g.priority.toLowerCase()}`}>{g.priority}</span>
-                                        <button className="btn btn--ghost btn--sm">{g.action} →</button>
+                                        <span className={`badge badge--${g.priority.toLowerCase() === 'critical' ? 'high' : g.priority.toLowerCase()}`}>{g.priority}</span>
+                                        <button className="btn btn--primary btn--sm" onClick={() => handleAction(g.skill)}>{g.action} →</button>
                                     </div>
                                 </div>
-
                                 {prereqs.length > 0 && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 40, flexWrap: 'wrap' }}>
-                                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Learn first:</span>
+                                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Prerequisites:</span>
                                         {prereqs.map(p => (
                                             <span key={p} style={{
-                                                fontSize: 11, padding: '2px 8px', borderRadius: 6,
-                                                background: 'rgba(34,211,238,0.08)',
-                                                border: '1px solid rgba(34,211,238,0.2)',
-                                                color: 'var(--cyan)', fontWeight: 600,
+                                                fontSize: 10, padding: '1px 6px', borderRadius: 4,
+                                                background: 'rgba(255, 255, 255, 0.05)',
+                                                border: '1px solid var(--border)',
+                                                color: 'var(--text-secondary)'
                                             }}>{p}</span>
                                         ))}
-                                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>→ then {g.skill}</span>
                                     </div>
                                 )}
                             </div>
@@ -127,6 +124,20 @@ export default function SkillGap() {
                     })
                 )}
             </div>
+
+            {/* ── Verified Skills ── */}
+            {masteredSkills.length > 0 && (
+                <div className="card">
+                    <div className="card-title mb-16" style={{ color: 'var(--green)' }}>Verified & Mastered</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                        {masteredSkills.map(s => (
+                            <div key={s} className="badge badge--low" style={{ padding: '6px 14px', borderRadius: 8, gap: 8 }}>
+                                <BarChart2 size={12} /> {s}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

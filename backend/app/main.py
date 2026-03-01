@@ -96,12 +96,16 @@ app.add_middleware(
     allow_headers     = ["*"],
 )
 
-# ── Routers ────────────────────────────────────────────────────────────────────
+from app.routers import ai_insight
+
+# ── App factory ────────────────────────────────────────────────────────────────
+# ... (rest of App factory)
 app.include_router(analyze.router)
 app.include_router(data_router.router)
 app.include_router(ml_router.router)
 app.include_router(inference_router.router)
 app.include_router(interview_router.router)
+app.include_router(ai_insight.router)
 
 
 # ── Root ────────────────────────────────────────────────────────────────────────

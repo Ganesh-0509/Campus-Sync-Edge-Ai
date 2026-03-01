@@ -123,6 +123,8 @@ function AuthPanelSignup() {
     )
 }
 
+import CharacterAssistant from '../components/CharacterAssistant'
+
 export default function Signup() {
     const { signup } = useAuth()
     const navigate = useNavigate()
@@ -133,18 +135,25 @@ export default function Signup() {
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
+    const [charState, setCharState] = useState<'idle' | 'typing' | 'loading' | 'error' | 'success'>('idle')
 
     const handle = async (e: FormEvent) => {
         e.preventDefault()
-        if (!name || !email || !password) { setError('Please fill all required fields.'); return }
-        if (password.length < 6) { setError('Password must be at least 6 characters.'); return }
-        setLoading(true); setError('')
+        if (!name || !email || !password) { setCharState('error'); setError('Please fill all required fields.'); return }
+        if (password.length < 6) { setCharState('error'); setError('Password must be at least 6 characters.'); return }
+
+        setLoading(true); setError(''); setCharState('loading')
         try {
             await signup(name, email, password)
-            navigate('/dashboard')
-        } catch { setError('Signup failed. Please try again.') }
-        finally { setLoading(false) }
+            setCharState('success')
+            setTimeout(() => navigate('/dashboard'), 1500)
+        } catch {
+            setCharState('error')
+            setError('Signup failed. Please try again.')
+        } finally { setLoading(false) }
     }
+
+    const onTyping = () => { if (charState === 'idle' || charState === 'error') setCharState('typing') }
 
     return (
         <div className="auth-shell">
@@ -152,10 +161,10 @@ export default function Signup() {
 
             <div className="auth-form-panel">
                 <div className="auth-form-box">
+                    <CharacterAssistant state={charState} message={error && charState === 'error' ? error : undefined} />
+
                     <h1>Create account 🚀</h1>
                     <div className="auth-form-box__sub">Your AI career coach is ready. Let's get started.</div>
-
-                    {error && <div className="auth-error">{error}</div>}
 
                     <form onSubmit={handle}>
                         <div className="auth-field">
@@ -163,7 +172,7 @@ export default function Signup() {
                             <input
                                 type="text" placeholder="Ganesh Kumar"
                                 value={name} onChange={e => setName(e.target.value)}
-                                autoComplete="name"
+                                autoComplete="name" onFocus={onTyping}
                             />
                         </div>
                         <div className="auth-field">
@@ -171,7 +180,7 @@ export default function Signup() {
                             <input
                                 type="email" placeholder="you@college.edu"
                                 value={email} onChange={e => setEmail(e.target.value)}
-                                autoComplete="email"
+                                autoComplete="email" onFocus={onTyping}
                             />
                         </div>
                         <div className="auth-field">
@@ -179,6 +188,7 @@ export default function Signup() {
                             <input
                                 type="text" placeholder="Anna University"
                                 value={college} onChange={e => setCollege(e.target.value)}
+                                onFocus={onTyping}
                             />
                         </div>
                         <div className="auth-field">
@@ -186,7 +196,7 @@ export default function Signup() {
                             <input
                                 type="password" placeholder="Min 6 characters"
                                 value={password} onChange={e => setPassword(e.target.value)}
-                                autoComplete="new-password"
+                                autoComplete="new-password" onFocus={onTyping}
                             />
                         </div>
 

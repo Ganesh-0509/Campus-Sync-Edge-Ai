@@ -9,6 +9,15 @@ No LLM required — runs fully on-device / backend.
 from __future__ import annotations
 import random
 from typing import Optional
+from app.core.config_loader import load_skills
+
+_SKILLS: dict | None = None
+def _get_skills():
+    global _SKILLS
+    if _SKILLS is None:
+        try: _SKILLS = load_skills()
+        except: _SKILLS = {}
+    return _SKILLS
 
 # ── Question Bank ─────────────────────────────────────────────────────────────
 # Each question has: id, question text, expected_concepts, difficulty, tip
@@ -330,9 +339,21 @@ def evaluate_answer(role: str, question_id: str, answer_text: str) -> dict:
 
     answer_lower = answer_text.lower()
     concepts     = question["concepts"]
+    skills_map   = _get_skills()
 
-    detected = [c for c in concepts if c.lower() in answer_lower]
-    missing  = [c for c in concepts if c.lower() not in answer_lower]
+    detected = []
+    for c in concepts:
+        # 1. Exact match for concept
+        if c.lower() in answer_lower:
+            detected.append(c)
+            continue
+        
+        # 2. Check synonyms if concept exists in our skills dictionary
+        syns = skills_map.get(c.lower(), [])
+        if any(s.lower() in answer_lower for s in syns):
+            detected.append(c)
+
+    missing = [c for c in concepts if c not in detected]
 
     raw_score = len(detected) / len(concepts) * 100 if concepts else 0
     score     = round(raw_score)

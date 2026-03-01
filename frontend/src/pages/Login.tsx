@@ -6,10 +6,10 @@ type CharState = 'idle' | 'looking' | 'hiding' | 'happy' | 'error'
 
 const TIPS: Record<CharState, string> = {
     idle: "Hi! Ready to pick up your placement journey? 👋",
-    looking: "Looking good! Enter your college email...",
+    looking: "Looking good! Enter your email...",
     hiding: "Oops! I'm not peeking at your password! 🙈",
-    happy: "Verified! Welcome back, let's go! 🚀",
-    error: "Hmm, check your credentials and try again 🤔",
+    happy: "Verified! Let's check your readiness score 🚀",
+    error: "Hmm, something's off. Try again? 🧐",
 }
 
 /* ─── Pupil offsets per state ── */
@@ -251,8 +251,8 @@ export default function Login() {
         try {
             await login(email, password)
             setChar('happy')
-            // Navigate after the happy animation plays
-            setTimeout(() => navigate('/dashboard'), 1200)
+            // Wait for the sparkles and big smile before moving on!
+            setTimeout(() => navigate('/dashboard'), 2200)
         } catch {
             setChar('error')
             setError('Invalid credentials. Try the Google demo button below.')
@@ -302,21 +302,22 @@ export default function Login() {
                     </div>
 
                     {/* Character */}
-                    <div style={{ position: 'relative', zIndex: 2 }}>
+                    <div style={{ position: 'relative', zIndex: 2, marginBottom: -25 }}>
                         <AnimatedCharacter state={charState} />
                     </div>
 
-                    {/* Speech bubble — directly below character, pointing UP */}
+                    {/* Speech bubble — moved down slightly to overlap less */}
                     <div style={{
                         position: 'relative',
-                        zIndex: 2,
-                        background: 'rgba(255,255,255,0.07)',
-                        border: '1px solid rgba(255,255,255,0.12)',
+                        zIndex: 3,
+                        background: 'rgba(255,255,255,0.08)',
+                        border: '1px solid rgba(255,255,255,0.15)',
                         borderRadius: 14,
-                        padding: '12px 18px',
-                        marginTop: 8,
-                        backdropFilter: 'blur(10px)',
+                        padding: '10px 18px',
+                        marginTop: 15,
+                        backdropFilter: 'blur(12px)',
                         transition: 'all 0.35s ease',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
                     }}>
                         {/* Tail pointing up */}
                         <div style={{

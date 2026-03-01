@@ -101,3 +101,132 @@ export async function getHealth(): Promise<HealthResult> {
     if (!res.ok) return { status: 'error', model_loaded: false }
     return res.json()
 }
+
+// ── AI Forecast ───────────────────────────────────────────────
+export interface ForecastResult {
+    trend_title: string
+    growth_pct: number
+    summary: string
+    sources: Array<{ name: string; url: string; insight: string }>
+}
+
+export async function getMarketForecast(role: string, missingSkills: string[]): Promise<ForecastResult> {
+    const res = await fetch(`${BASE}/ai/market-forecast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role, missing_skills: missingSkills })
+    })
+    if (!res.ok) throw new Error('AI Forecast failed')
+    return res.json()
+}
+
+export interface DetailedContent {
+    subheading: string
+    explanation: string
+    algorithm?: string
+    example: string
+    complexity?: string
+}
+
+export interface StudySection {
+    title: string
+    description: string
+}
+
+export interface StudyNotesResult {
+    skill: string
+    quick_summary: string
+    key_concepts?: StudySection[]
+    pro_tip: string
+    estimated_study_time: string
+    sub_roadmap?: Array<{ title: string; duration: string }>
+    detailed_content?: DetailedContent[]
+}
+
+export interface QuizQuestion {
+    id: number
+    question: string
+    options: string[]
+    correct_index: number
+    explanation: string
+}
+
+export interface QuizResult {
+    skill: string
+    questions: QuizQuestion[]
+}
+
+export async function getStudyNotes(skill: string, masteredSkills: string[] = []): Promise<StudyNotesResult> {
+    const skills = masteredSkills.join(',')
+    const res = await fetch(`${BASE}/ai/study/notes?skill=${encodeURIComponent(skill)}&existing_skills=${encodeURIComponent(skills)}`)
+    if (!res.ok) throw new Error('Failed to load study notes')
+    return res.json()
+}
+
+export async function getStudyQuiz(skill: string): Promise<QuizResult> {
+    const res = await fetch(`${BASE}/ai/study/quiz?skill=${encodeURIComponent(skill)}`)
+    if (!res.ok) throw new Error('AI Quiz failed')
+    return res.json()
+}
+
+export async function studyChat(skill: string, query: string, history: any[] = [], masteredSkills: string[] = []): Promise<string> {
+    const res = await fetch(`${BASE}/ai/study/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skill, query, history, mastered_skills: masteredSkills })
+    })
+    if (!res.ok) throw new Error('Chat failed')
+    const data = await res.json()
+    return data.response
+}
+
+// ── Admin & Community ─────────────────────────────────────────
+export interface AdminStats {
+    pending_reviews: number
+    approved_contributions: number
+    total_courses_cached: number
+    active_students: number
+}
+
+export interface Contribution {
+    id: number
+    topic: string
+    submitted_by: string
+    content: string
+    status: string
+    created_at: string
+}
+
+export async function submitContribution(skill: string, submitted_by: string, notes_content: any): Promise<{ status: string }> {
+    const res = await fetch(`${BASE}/ai/study/contribute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skill, submitted_by, notes_content })
+    })
+    if (!res.ok) throw new Error('Failed to submit contribution')
+    return res.json()
+}
+
+export async function getAdminStats(): Promise<AdminStats> {
+    const res = await fetch(`${BASE}/ai/admin/stats`)
+    if (!res.ok) throw new Error('Failed to load admin stats')
+    return res.json()
+}
+
+export async function getPendingContributions(): Promise<Contribution[]> {
+    const res = await fetch(`${BASE}/ai/admin/contributions`)
+    if (!res.ok) throw new Error('Failed to load contributions')
+    return res.json()
+}
+
+export async function approveContribution(id: number): Promise<{ status: string }> {
+    const res = await fetch(`${BASE}/ai/admin/contributions/${id}/approve`, { method: 'POST' })
+    if (!res.ok) throw new Error('Approval failed')
+    return res.json()
+}
+
+export async function rejectContribution(id: number): Promise<{ status: string }> {
+    const res = await fetch(`${BASE}/ai/admin/contributions/${id}/reject`, { method: 'POST' })
+    if (!res.ok) throw new Error('Rejection failed')
+    return res.json()
+}

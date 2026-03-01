@@ -14,6 +14,7 @@ import InterviewReadiness from './pages/InterviewReadiness'
 import ProgressTracking from './pages/ProgressTracking'
 import ResumeComparison from './pages/ResumeComparison'
 import IndustryAlignment from './pages/IndustryAlignment'
+import AdminDashboard from './pages/AdminDashboard'
 import Settings from './pages/Settings'
 import { initOnDevice } from './utils/onDevicePredictor'
 import { useEffect } from 'react'
@@ -49,6 +50,7 @@ function AppRoutes() {
                 <Route path="progress-tracking" element={<ProgressTracking />} />
                 <Route path="resume-comparison" element={<ResumeComparison />} />
                 <Route path="industry-alignment" element={<IndustryAlignment />} />
+                <Route path="admin" element={<AdminDashboard />} />
                 <Route path="settings" element={<Settings />} />
             </Route>
 
