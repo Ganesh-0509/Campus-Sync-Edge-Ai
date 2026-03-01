@@ -14,7 +14,7 @@ class BytezService:
                 # Based on the user's snippet
                 import bytez
                 self.sdk = bytez.Bytez(api_key)
-                self.model = self.sdk.model("google/gemini-2.5-flash-lite")
+                self.model = self.sdk.model(os.getenv("BYTEZ_MODEL", "google/gemini-2.5-flash-lite"))
             except Exception as e:
                 log.error(f"Failed to initialize Bytez SDK: {e}")
 

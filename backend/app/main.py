@@ -31,7 +31,13 @@ from app.routers import ml as ml_router
 from app.routers import inference as inference_router
 from app.routers import interview as interview_router
 
-log = logging.getLogger("main")
+import os
+
+# ---- Critical env‑var guard -------------------------------------------------
+# The Bytez service cannot function without a valid API key. Abort early if missing.
+if not os.getenv("BYTEZ_API_KEY"):
+    log.error("BYTEZ_API_KEY is missing – the AI service will not start.")
+    raise SystemExit(1)
 
 logging.basicConfig(
     level   = logging.INFO,

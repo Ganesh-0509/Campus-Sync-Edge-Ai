@@ -2,7 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import {
     LayoutDashboard, FileText, BarChart2, ZapOff,
     CheckSquare, MessageSquare, TrendingUp, GitCompare,
-    Building2, Settings, Search, Bell, Sun, Moon, Shield, Cpu
+    Building2, Settings, Sun, Moon, Shield, Cpu
 } from 'lucide-react'
 import { useState, useEffect, createContext, useContext } from 'react'
 import { useAuth } from '../context/AuthContext'
@@ -113,8 +113,7 @@ function Navbar({ privacy, setPrivacy, theme, setTheme }: { privacy: boolean; se
 
     return (
         <header className="navbar">
-            <div className="navbar__search" style={{ opacity: 0, pointerEvents: 'none' }}>
-            </div>
+            {/* Search placeholder removed – can be added later if needed */}
 
             <div className="navbar__actions">
                 {/* On-Device badge */}

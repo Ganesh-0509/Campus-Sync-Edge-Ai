@@ -56,11 +56,17 @@
   --font: 'Inter', system-ui, sans-serif;
 }
 
+/* Smooth transition when toggling dark ↔ light */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
 :root.light-mode {
   /* Backgrounds */
   --bg-app: #f4f6f8;
   --bg-sidebar: #ffffff;
-  --bg-card: #ffffff;
+  --bg-card: #f8fafc;
+  /* soft gray instead of stark white */
   --bg-card-hover: #eef2f6;
   --bg-input: #ffffff;
   --bg-tag: #e2e8f0;
