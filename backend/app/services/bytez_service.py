@@ -18,10 +18,40 @@ class BytezService:
             except Exception as e:
                 log.error(f"Failed to initialize Bytez SDK: {e}")
 
+    async def _get_scraped_context(self, skill: str) -> str:
+        """Dynamically scrapes trusted sources to ground the AI model."""
+        context = ""
+        try:
+            import wikipedia
+            results = wikipedia.search(f"{skill} programming algorithm data structure", results=1)
+            if results:
+                page = wikipedia.page(results[0], auto_suggest=False)
+                context = f"Source: Wikipedia\nTitle: {page.title}\n{page.summary}\n{page.content[:2000]}"
+                return context
+        except Exception as e:
+            log.warning(f"Wiki scrape failed for {skill}: {e}")
+            
+        try:
+            from duckduckgo_search import DDGS
+            with DDGS() as ddgs:
+                results = list(ddgs.text(f"{skill} programming tutorial facts", max_results=3))
+                if results:
+                    context = "Source: Web Search Snippets\n"
+                    for res in results:
+                        context += f"Snippet: {res.get('body', '')}\n\n"
+                    return context
+        except Exception as e:
+            log.warning(f"DDG scrape failed for {skill}: {e}")
+            
+        return ""
+
     async def get_study_materials(self, skill: str, existing_skills: str = "") -> Dict[str, Any]:
         """Provides personalized study materials for a skill."""
         if not self.model:
             return {"skill": skill, "is_fallback": True}
+
+        scraped_data = await self._get_scraped_context(skill)
+        context_prompt = f"\n\nBase your educational material strictly on this trusted external data to avoid hallucinations:\n{scraped_data}\n" if scraped_data else ""
 
         prompt = f"""
         Expert Tutor Role.
@@ -49,7 +79,7 @@ class BytezService:
           ],
           "pro_tip": "Industry Hack..."
         }}
-        Ensure detailed_content has at least 3-5 sections diving deep into {skill}.
+        Ensure detailed_content has at least 3-5 sections diving deep into {skill}.{context_prompt}
         """
         try:
             # model.run in Bytez is typically synchronous in the JS snippet provided 
