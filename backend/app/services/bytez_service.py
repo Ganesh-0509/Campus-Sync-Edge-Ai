@@ -114,17 +114,23 @@ class BytezService:
         prompt = f"Generate 3 multiple choice questions for {skill} as JSON: {{'questions': [{{'id':1, 'question':'', 'options':[], 'correct_index':0, 'explanation':''}}]}}"
         try:
             res = self.model.run([{"role": "user", "content": prompt}])
+            
             content = ""
-            if hasattr(res, 'output'):
+            if isinstance(res, dict):
+                content = res.get("output", {}).get("content", "") if isinstance(res.get("output"), dict) else str(res.get("output", ""))
+            elif hasattr(res, 'output'):
                 content = res.output.get("content", "") if isinstance(res.output, dict) else str(res.output)
             else:
                 content = str(res)
             
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
+            elif "```" in content:
+                content = content.split("```")[1].split("```")[0].strip()
             
             return json.loads(content)
-        except:
+        except Exception as e:
+            log.error(f"Generate quiz failed: {e}")
             return {"is_fallback": True}
 
     async def get_market_forecast(self, role: str, missing: List[str]) -> Dict[str, Any]:
@@ -133,11 +139,23 @@ class BytezService:
         prompt = f"Forecast for {role}. Skills: {missing}. JSON: {{'trend_title':'', 'growth_pct':0, 'summary':'', 'sources':[]}}"
         try:
             res = self.model.run([{"role": "user", "content": prompt}])
-            content = str(res.output if hasattr(res, 'output') else res)
+            
+            content = ""
+            if isinstance(res, dict):
+                content = res.get("output", {}).get("content", "") if isinstance(res.get("output"), dict) else str(res.get("output", ""))
+            elif hasattr(res, 'output'):
+                content = res.output.get("content", "") if isinstance(res.output, dict) else str(res.output)
+            else:
+                content = str(res)
+                
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
+            elif "```" in content:
+                content = content.split("```")[1].split("```")[0].strip()
+                
             return json.loads(content)
-        except:
+        except Exception as e:
+            log.error(f"Generate forecast failed: {e}")
             return {"is_fallback": True}
 
 bytez_service = BytezService(os.getenv("BYTEZ_API_KEY", ""))

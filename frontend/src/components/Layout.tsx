@@ -113,10 +113,7 @@ function Navbar({ privacy, setPrivacy, theme, setTheme }: { privacy: boolean; se
 
     return (
         <header className="navbar">
-            <div className="navbar__search">
-                <Search className="navbar__search-icon" size={14} />
-                <input placeholder="Search skills, features..." />
-                <span className="navbar__shortcut">⌘K</span>
+            <div className="navbar__search" style={{ opacity: 0, pointerEvents: 'none' }}>
             </div>
 
             <div className="navbar__actions">
@@ -150,10 +147,6 @@ function Navbar({ privacy, setPrivacy, theme, setTheme }: { privacy: boolean; se
                     onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 >
                     {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-                </button>
-
-                <button className="navbar__btn" title="Notifications">
-                    <Bell size={15} />
                 </button>
 
                 <div className="navbar__avatar" title={user?.name ?? 'Profile'}>
