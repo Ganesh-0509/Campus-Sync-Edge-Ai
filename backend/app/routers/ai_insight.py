@@ -2,6 +2,10 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from app.services.ai_service import ai_service
+from app.services.curriculum_graph import (
+    get_prerequisites, get_unlocked_skills, get_learning_path,
+    get_curriculum_overview, can_unlock
+)
 
 router = APIRouter(prefix="/ai", tags=["AI Insights"])
 
@@ -94,3 +98,46 @@ async def get_admin_stats():
         "total_courses_cached": total_skills,
         "active_students": 142  # Mock metric for dashboard aesthetics
     }
+
+
+# ── Curriculum Graph Routes ──────────────────────────────────────────────────
+
+class CurriculumRequest(BaseModel):
+    mastered_skills: List[str]
+
+class UnlockCheckRequest(BaseModel):
+    skill: str
+    mastered_skills: List[str]
+    quiz_score: Optional[float] = 0.0
+
+
+@router.get("/curriculum/overview")
+def curriculum_overview():
+    """Returns the full skill dependency graph and metadata."""
+    return get_curriculum_overview()
+
+
+@router.get("/curriculum/prerequisites")
+def skill_prerequisites(skill: str):
+    """Returns prerequisite skills for a given topic."""
+    prereqs = get_prerequisites(skill)
+    return {"skill": skill, "prerequisites": prereqs}
+
+
+@router.post("/curriculum/unlocked")
+def unlocked_skills(req: CurriculumRequest):
+    """Returns all skills unlocked based on the student's mastered skill set."""
+    return {"mastered": req.mastered_skills, "unlocked": get_unlocked_skills(req.mastered_skills)}
+
+
+@router.post("/curriculum/learning-path")
+def learning_path(skill: str, req: CurriculumRequest):
+    """Returns the ordered prerequisite learning path to reach a target skill."""
+    path = get_learning_path(skill, req.mastered_skills)
+    return {"target": skill, "learning_path": path, "total_steps": len(path)}
+
+
+@router.post("/curriculum/can-unlock")
+def check_unlock(req: UnlockCheckRequest):
+    """Checks if a student can unlock a skill based on prerequisites and quiz score."""
+    return can_unlock(req.skill, req.mastered_skills, req.quiz_score)

@@ -27,23 +27,23 @@ from app.core.supabase_client import check_connection
 from app.model_loader import load_models, is_loaded, get_metadata
 from app.routers import analyze
 from app.routers import data as data_router
+import os
 from app.routers import ml as ml_router
 from app.routers import inference as inference_router
 from app.routers import interview as interview_router
-
-import os
-
-# ---- Critical env‑var guard -------------------------------------------------
-# The Bytez service cannot function without a valid API key. Abort early if missing.
-if not os.getenv("BYTEZ_API_KEY"):
-    log.error("BYTEZ_API_KEY is missing – the AI service will not start.")
-    raise SystemExit(1)
 
 logging.basicConfig(
     level   = logging.INFO,
     format  = "%(asctime)s  %(levelname)-8s  [%(name)s]  %(message)s",
     datefmt = "%H:%M:%S",
 )
+
+log = logging.getLogger("main")
+
+# ---- Critical env‑var guard -------------------------------------------------
+if not os.getenv("BYTEZ_API_KEY"):
+    log.error("BYTEZ_API_KEY is missing – the AI service will not start.")
+    raise SystemExit(1)
 
 
 # ── Lifespan ───────────────────────────────────────────────────────────────────

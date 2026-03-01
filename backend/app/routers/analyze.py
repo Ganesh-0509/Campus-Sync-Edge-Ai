@@ -12,6 +12,7 @@ from app.services.skill_dictionary import extract_skills
 from app.services.role_readiness_engine import calculate_role_readiness
 from app.services.role_matrix import VALID_ROLES
 from app.core.supabase_client import get_supabase
+from app.services.encryption_service import encrypt_text, is_encryption_enabled
 
 router = APIRouter()
 
@@ -67,10 +68,11 @@ async def upload_resume(
                 # Insert resume row
                 resume_resp = sb.table("resumes").insert({
                     "filename":          file.filename,
-                    "raw_text":          parsed["raw_text"],
+                    "raw_text":          encrypt_text(parsed["raw_text"]),  # encrypted at rest
                     "detected_skills":   skills,
                     "sections_detected": parsed["sections_detected"],
                     "links":             parsed["links"],
+                    "encrypted":         is_encryption_enabled(),
                 }).execute()
                 resume_id = resume_resp.data[0]["id"]
 
