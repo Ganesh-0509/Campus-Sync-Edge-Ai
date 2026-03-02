@@ -28,6 +28,7 @@ def _fmt(analysis: dict) -> dict:
     """Normalise a role_analyses row for API output."""
     return {
         "analysis_id":               analysis["id"],
+        "resume_id":                 analysis["resume_id"],
         "role":                      analysis["role"],
         "final_score":               analysis["final_score"],
         "readiness_category":        analysis["readiness_category"],
@@ -185,6 +186,40 @@ def role_stats():
         raise _db_error(e)
 
 
+# ── GET /session/latest/{email} ────────────────────────────────────────────────
+
+@router.get("/session/latest/{email}")
+def get_latest_session(email: str):
+    """
+    Finds the latest resume for a user and returns its most recent analysis.
+    Used for frontend session persistence if local storage is cleared.
+    """
+    try:
+        sb = get_supabase()
+
+        # 1. Get the most recent resume for this email
+        resumes_resp = sb.table("resumes").select("id").eq("user_email", email).order("created_at", desc=True).limit(1).execute()
+
+        if not resumes_resp.data:
+            return {"analysis": None, "prediction": None}
+
+        resume_id = resumes_resp.data[0]["id"]
+
+        # 2. Get the latest analysis for that resume
+        analysis_resp = sb.table("role_analyses").select("*").eq("resume_id", resume_id).order("created_at", desc=True).limit(1).execute()
+
+        if not analysis_resp.data:
+            return {"analysis": None, "prediction": None}
+
+        return {
+            "analysis": _fmt(analysis_resp.data[0]),
+            "prediction": None # We don't persist predictions yet, but we have the analysis
+        }
+
+    except Exception as e:
+        raise _db_error(e)
+
+
 # ── GET /export/dataset ────────────────────────────────────────────────────────
 
 @router.get("/export/dataset")
@@ -196,7 +231,16 @@ def export_dataset():
     try:
         sb = get_supabase()
 
-        analyses = (sb.table("role_analyses").select("*").order("id").execute().data or [])
+        # Fetch all analyses ordered by newest first
+        all_analyses = (sb.table("role_analyses").select("*").order("created_at", desc=True).execute().data or [])
+        
+        # Keep only the latest analysis per resume_id
+        seen_resumes = set()
+        analyses = []
+        for a in all_analyses:
+            if a["resume_id"] not in seen_resumes:
+                seen_resumes.add(a["resume_id"])
+                analyses.append(a)
 
         # Fetch resume detected_skills in one query and build a lookup map
         resumes_resp = sb.table("resumes").select("id, filename, detected_skills").execute()
@@ -225,5 +269,25 @@ def export_dataset():
 
         return {"total": len(dataset), "dataset": dataset}
 
+    except Exception as e:
+        raise _db_error(e)
+# ── DELETE /history/{analysis_id} ──────────────────────────────────────────────
+@router.delete("/history/analysis/{analysis_id}")
+def delete_analysis(analysis_id: int):
+    """Delete a single role analysis entry."""
+    try:
+        sb = get_supabase()
+        sb.table("role_analyses").delete().eq("id", analysis_id).execute()
+        return {"status": "deleted", "id": analysis_id}
+    except Exception as e:
+        raise _db_error(e)
+
+@router.delete("/history/resume/{resume_id}")
+def delete_resume(resume_id: int):
+    """Delete an entire resume record and all its associated analyses."""
+    try:
+        sb = get_supabase()
+        sb.table("resumes").delete().eq("id", resume_id).execute()
+        return {"status": "deleted", "id": resume_id}
     except Exception as e:
         raise _db_error(e)

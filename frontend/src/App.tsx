@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import { ResumeProvider } from './context/ResumeContext'
+import { ResumeProvider, useResume } from './context/ResumeContext'
 import Layout from './components/Layout'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
@@ -24,6 +24,19 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
     return user ? <>{children}</> : <Navigate to="/login" replace />
 }
 
+function DashboardRedirect() {
+    const { user } = useAuth()
+    const { analysis, loading } = useResume()
+
+    if (loading) return null
+
+    if (user && !analysis) {
+        return <Navigate to="/resume-analyzer" replace />
+    }
+
+    return <Dashboard />
+}
+
 function AppRoutes() {
     const { user } = useAuth()
     return (
@@ -41,7 +54,7 @@ function AppRoutes() {
             </Route>
 
             <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="dashboard" element={<DashboardRedirect />} />
                 <Route path="resume-analyzer" element={<ResumeAnalyzer />} />
                 <Route path="readiness-score" element={<ReadinessScore />} />
                 <Route path="skill-gap" element={<SkillGap />} />

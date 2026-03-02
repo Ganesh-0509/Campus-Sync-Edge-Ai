@@ -26,6 +26,12 @@ router = APIRouter(prefix="/ml", tags=["Hybrid Intelligence"])
 
 class RolePredictRequest(BaseModel):
     skills: list[str]
+    project_score_percent: float = 0
+    ats_score_percent: float = 0
+    structure_score_percent: float = 0
+    raw_text: str = ""
+    sections_detected: list[str] = []
+    current_role: str = ""
 
 class ScoreProjectRequest(BaseModel):
     current_skills: list[str]
@@ -52,18 +58,54 @@ def _require_data() -> list[dict]:
 @router.post("/predict-role")
 def ml_predict_role(request: RolePredictRequest):
     """
-    Predict the best-fit role for a given skill set using cosine similarity
-    against all analysed resumes in the database.
-
-    Returns predicted role, confidence score, and top-3 matching records.
+    Predict the best-fit role by calculating the Readiness Score 
+    for the current resume across all support roles in the system.
     """
     try:
-        records = _require_data()
-        result  = predict_role(request.skills, records)
-        result["dataset_size"] = len(records)
-        return result
-    except HTTPException:
-        raise
+        from app.services.role_readiness_engine import calculate_role_readiness
+        from app.services.role_matrix import VALID_ROLES
+        
+        best_role = ""
+        best_score = -1
+        all_results = []
+
+        for role in VALID_ROLES:
+            res = calculate_role_readiness(
+                resume_skills=request.skills,
+                sections_detected=request.sections_detected,
+                raw_text=request.raw_text,
+                role_name=role
+            )
+            
+            score = res.get("final_score", 0)
+            all_results.append({
+                "role": role,
+                "score": score
+            })
+
+            if score > best_score:
+                best_score = score
+                best_role = role
+
+        # Sort matches by score
+        all_results.sort(key=lambda x: -x["score"])
+        
+        # Calculate reasoning
+        if request.current_role and best_role == request.current_role:
+             reasoning = f"Your resume is a perfect fit for {best_role}! You match {int(best_score)}% of the core requirements."
+        elif request.current_role:
+            current_score = next((r["score"] for r in all_results if r["role"] == request.current_role), 0)
+            reasoning = f"Your profile matches {best_role} at {int(best_score)}%, which is a much stronger match than {request.current_role} ({int(current_score)}%)."
+        else:
+            reasoning = f"Your highest potential match is {best_role} with a score of {int(best_score)}%."
+
+        return {
+            "predicted_role": best_role,
+            "confidence": best_score / 100.0,
+            "top_matches": all_results[:3],
+            "reasoning": reasoning,
+            "model_version": "cross-role-validator-v1"
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

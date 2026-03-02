@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useResume } from '../context/ResumeContext'
+import { useAuth } from '../context/AuthContext'
 import { uploadResume, predictResume, getRoles } from '../api/client'
 import { Upload, FileText, CheckCircle, Cpu, Shield } from 'lucide-react'
 import { usePrivacy } from '../components/Layout'
 import { predictOnDevice, isOnDeviceReady } from '../utils/onDevicePredictor'
 
 export default function ResumeAnalyzer() {
-    const { setAnalysis, setPrediction, analysis } = useResume()
+    const { setAnalysis, setPrediction, analysis, setCurrentFile } = useResume()
     const { privacy } = usePrivacy()
+    const { user } = useAuth()
     const navigate = useNavigate()
 
     const [roles, setRoles] = useState<string[]>([])
@@ -26,14 +28,14 @@ export default function ResumeAnalyzer() {
     const handleFile = (f: File) => {
         const ok = f.name.endsWith('.pdf') || f.name.endsWith('.docx')
         if (!ok) { setError('Only PDF and DOCX files are supported.'); return }
-        setFile(f); setError('')
+        setFile(f); setCurrentFile(f); setError('')
     }
 
     const handleUpload = async () => {
         if (!file) return
         setLoading(true); setError('')
         try {
-            const result = await uploadResume(file, role, privacy)
+            const result = await uploadResume(file, role, privacy, user?.email)
             setAnalysis(result)
 
             const useLocal = privacy || isOnDeviceReady()
@@ -72,6 +74,13 @@ export default function ResumeAnalyzer() {
                 }
             } catch (e) {
                 console.warn('ML Prediction failed (fallback to base):', e)
+                setPrediction({
+                    predicted_role: role,
+                    confidence: 1.0,
+                    resume_score: result.final_score,
+                    weak_areas: result.missing_core_skills.slice(0, 3),
+                    model_version: 'fallback-v1'
+                })
             }
             navigate('/readiness-score')
         } catch (e: any) {

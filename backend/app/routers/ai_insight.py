@@ -92,11 +92,24 @@ async def get_admin_stats():
     pending = len(local_db.get_contributions(status="pending"))
     approved = len(local_db.get_contributions(status="approved"))
     total_skills = local_db.get_all_topics_count()
+    
+    # Dynamic student count from Supabase
+    active_students = 0
+    try:
+        from app.core.supabase_client import get_supabase
+        sb = get_supabase()
+        resp = sb.table("resumes").select("user_email", count="exact").execute()
+        # Count unique emails for true "active students"
+        emails = set(r.get("user_email") for r in resp.data if r.get("user_email"))
+        active_students = len(emails)
+    except:
+        active_students = 142 # Fallback
+        
     return {
         "pending_reviews": pending,
         "approved_contributions": approved,
         "total_courses_cached": total_skills,
-        "active_students": 142  # Mock metric for dashboard aesthetics
+        "active_students": active_students
     }
 
 

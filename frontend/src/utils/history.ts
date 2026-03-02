@@ -9,8 +9,9 @@ export interface HistoryEntry {
     role: string
 }
 
-export function saveScore(score: number, role: string): void {
-    const hist = loadHistory()
+export function saveScore(score: number, role: string, userEmail?: string): void {
+    const prefix = userEmail ? `${userEmail}_` : ''
+    const hist = loadHistory(userEmail)
     const now = new Date()
     const label = now.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
 
@@ -24,11 +25,12 @@ export function saveScore(score: number, role: string): void {
         if (hist.length > MAX_ENTRIES) hist.shift()
     }
 
-    localStorage.setItem(LS_KEY, JSON.stringify(hist))
+    localStorage.setItem(prefix + LS_KEY, JSON.stringify(hist))
 }
 
-export function loadHistory(): HistoryEntry[] {
-    try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') }
+export function loadHistory(userEmail?: string): HistoryEntry[] {
+    const prefix = userEmail ? `${userEmail}_` : ''
+    try { return JSON.parse(localStorage.getItem(prefix + LS_KEY) || '[]') }
     catch { return [] }
 }
 

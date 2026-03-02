@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, BookOpen, CheckCircle2, ChevronRight, BrainCircuit, Lightbulb, Clock, MessageSquare, Send, Sparkles, Pin, Sun, Moon } from 'lucide-react'
 import { getStudyNotes, getStudyQuiz, studyChat, submitContribution, type StudyNotesResult, type QuizResult } from '../api/client'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useResume } from '../context/ResumeContext'
 import { useAuth } from '../context/AuthContext'
 
@@ -335,7 +337,13 @@ export default function StudyHub({ skill, onClose, onVerified }: StudyHubProps) 
                                     )}
                                     {messages.map((m, i) => (
                                         <div key={i} className={`msg msg--${m.role}`}>
-                                            <div className="msg-content">{m.content}</div>
+                                            <div className="msg-content">
+                                                {m.role === 'assistant' ? (
+                                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                        {m.content}
+                                                    </ReactMarkdown>
+                                                ) : m.content}
+                                            </div>
                                         </div>
                                     ))}
                                     {chatLoading && (

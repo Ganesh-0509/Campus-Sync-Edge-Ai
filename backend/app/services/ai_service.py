@@ -12,10 +12,8 @@ log = logging.getLogger("ai_service")
 
 class AIService:
     def __init__(self):
-        self.openai_key = os.getenv("OPENAI_API_KEY")
         self.gemini_key = os.getenv("GEMINI_API_KEY")
         self.bytez_key = os.getenv("BYTEZ_API_KEY")
-        self.openai_url = "https://api.openai.com/v1/chat/completions"
 
     async def get_market_forecast(self, role: str, missing_skills: list) -> Dict[str, Any]:
         """Market forecast — tries Bytez, then Gemini, then static fallback."""
@@ -23,10 +21,6 @@ class AIService:
             return await bytez_service.get_market_forecast(role, missing_skills)
         if self.gemini_key:
             return await gemini_service.get_market_forecast(role, missing_skills)
-        if self.openai_key:
-            result = await self._get_openai_forecast(role, missing_skills)
-            if result:
-                return result
         return gemini_service._get_fallback(role, missing_skills)
 
     async def get_study_materials(self, skill: str, existing_skills: str = "") -> Dict[str, Any]:
@@ -129,27 +123,7 @@ class AIService:
             log.error("Chat failed: %s", e)
             return "Sorry, I couldn't process that. Could you rephrase?"
 
-    async def _get_openai_forecast(self, role: str, missing_skills: list) -> Optional[Dict[str, Any]]:
-        """Fallback to OpenAI for market forecasting."""
-        if not self.openai_key:
-            return None
-        skills_str = ", ".join(missing_skills[:3])
-        prompt = f"Role: {role}. Missing skills: {skills_str}. Return JSON: {{trend_title, growth_pct, summary, sources}}"
-        try:
-            async with httpx.AsyncClient(verify=False) as client:
-                resp = await client.post(
-                    self.openai_url,
-                    headers={"Authorization": f"Bearer {self.openai_key}"},
-                    json={"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": prompt}]},
-                )
-                if resp.status_code == 200:
-                    content = resp.json()["choices"][0]["message"]["content"]
-                    if "```json" in content:
-                        content = content.split("```json")[1].split("```")[0].strip()
-                    return json.loads(content)
-        except Exception as e:
-            log.error("OpenAI forecast failed: %s", e)
-        return None
+
 
 
 ai_service = AIService()

@@ -14,6 +14,7 @@ export interface UploadResult {
     recommendations: Array<{ skill: string; priority: string; reason: string }>
     detected_skills: string[]
     sections_detected: string[]
+    raw_text: string
     links: string[]
     resume_id: number | null
     analysis_id: number | null
@@ -29,6 +30,8 @@ export interface PredictResult {
     weak_areas: string[]
     model_version: string
     inference_time_ms?: number
+    explanation?: string
+    reasoning?: string
 }
 
 export interface HealthResult {
@@ -41,11 +44,12 @@ export interface HealthResult {
 }
 
 // ── Upload resume ─────────────────────────────────────────────
-export async function uploadResume(file: File, role: string, privacyMode: boolean = false): Promise<UploadResult> {
+export async function uploadResume(file: File, role: string, privacyMode: boolean = false, userEmail?: string): Promise<UploadResult> {
     const fd = new FormData()
     fd.append('file', file)
     fd.append('role', role)
     fd.append('privacy_mode', String(privacyMode))
+    if (userEmail) fd.append('user_email', userEmail)
     const res = await fetch(`${BASE}/upload`, { method: 'POST', body: fd })
     if (!res.ok) {
         const err = await res.text().catch(() => 'Upload failed')
@@ -72,6 +76,33 @@ export async function predictResume(data: {
     return res.json()
 }
 
+/** Pure skill-based role prediction (Similarity Engine) */
+export async function predictBestFit(data: {
+    skills: string[]
+    project_score_percent: number
+    ats_score_percent: number
+    structure_score_percent: number
+    raw_text: string
+    sections_detected: string[]
+    current_role: string
+}): Promise<PredictResult> {
+    const res = await fetch(`${BASE}/ml/predict-role`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    })
+    if (!res.ok) throw new Error('Best fit prediction failed')
+    const result = await res.json()
+    return {
+        predicted_role: result.predicted_role,
+        confidence: result.confidence,
+        resume_score: result.top_matches?.[0]?.score ?? 0,
+        weak_areas: [],
+        model_version: result.model_version || 'cross-role-v1',
+        reasoning: result.reasoning
+    }
+}
+
 // ── Roles list ────────────────────────────────────────────────
 export async function getRoles(): Promise<string[]> {
     const res = await fetch(`${BASE}/roles`)
@@ -92,6 +123,18 @@ export async function getAnalytics(): Promise<Record<string, unknown>> {
 export async function getHistory(resumeId: number): Promise<unknown> {
     const res = await fetch(`${BASE}/history/${resumeId}`)
     if (!res.ok) return null
+    return res.json()
+}
+
+export async function deleteAnalysis(id: number): Promise<{ status: string }> {
+    const res = await fetch(`${BASE}/history/analysis/${id}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error('Deletion failed')
+    return res.json()
+}
+
+export async function deleteResume(id: number): Promise<{ status: string }> {
+    const res = await fetch(`${BASE}/history/resume/${id}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error('Deletion failed')
     return res.json()
 }
 
@@ -188,6 +231,24 @@ export interface AdminStats {
     active_students: number
 }
 
+export interface AdminStudent {
+    analysis_id: number
+    resume_id: number
+    filename: string
+    role: string
+    final_score: number
+    readiness_category: string
+    core_coverage_percent: number
+    optional_coverage_percent: number
+    project_score_percent: number
+    ats_score_percent: number
+    structure_score_percent: number
+    detected_skills: string[]
+    missing_core_skills: string[]
+    missing_optional_skills: string[]
+    analyzed_at: string
+}
+
 export interface Contribution {
     id: number
     topic: string
@@ -228,5 +289,18 @@ export async function approveContribution(id: number): Promise<{ status: string 
 export async function rejectContribution(id: number): Promise<{ status: string }> {
     const res = await fetch(`${BASE}/ai/admin/contributions/${id}/reject`, { method: 'POST' })
     if (!res.ok) throw new Error('Rejection failed')
+    return res.json()
+}
+
+export async function getFullDataset(): Promise<AdminStudent[]> {
+    const res = await fetch(`${BASE}/export/dataset`)
+    if (!res.ok) throw new Error('Failed to load full dataset')
+    const data = await res.json()
+    return data.dataset || []
+}
+
+export async function getLatestSession(email: string): Promise<{ analysis: UploadResult | null; prediction: PredictResult | null }> {
+    const res = await fetch(`${BASE}/session/latest/${encodeURIComponent(email)}`)
+    if (!res.ok) return { analysis: null, prediction: null }
     return res.json()
 }

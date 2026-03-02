@@ -111,6 +111,38 @@ export default function InterviewReadiness() {
     const STRENGTHS = analysis?.detected_skills?.slice(0, 4).map(s => s.charAt(0).toUpperCase() + s.slice(1)) ?? ['Data Structures', 'Python Programming', 'REST APIs', 'SQL Databases']
     const IMPROVEMENTS = prediction?.weak_areas?.length ? prediction.weak_areas : ['System Design', 'Behavioral Questions', 'Time Management']
 
+    if (!analysis) {
+        return (
+            <div className="page-content">
+                <div style={{ maxWidth: 800, margin: '60px auto', textAlign: 'center' }}>
+                    <div style={{ fontSize: 60, marginBottom: 20 }}>🎙️</div>
+                    <h1 className="page-title">Mock Interview Locked</h1>
+                    <p className="page-subtitle">We need your resume analysis to generate role-specific interview questions just for you.</p>
+                    <button className="btn btn--primary" onClick={() => (window.location.href = '/resume-analyzer')} style={{ marginTop: 24 }}>
+                        Analyze Your Resume Now
+                    </button>
+                    <div style={{ marginTop: 40, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+                        <div className="card" style={{ padding: 16 }}>
+                            <div style={{ fontSize: 20, marginBottom: 8 }}>🔊</div>
+                            <div style={{ fontSize: 13, fontWeight: 700 }}>Voice AI</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Real-time speech recognition</div>
+                        </div>
+                        <div className="card" style={{ padding: 16 }}>
+                            <div style={{ fontSize: 20, marginBottom: 8 }}>🎯</div>
+                            <div style={{ fontSize: 13, fontWeight: 700 }}>Targeted questions</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Based on your skill gaps</div>
+                        </div>
+                        <div className="card" style={{ padding: 16 }}>
+                            <div style={{ fontSize: 20, marginBottom: 8 }}>📊</div>
+                            <div style={{ fontSize: 13, fontWeight: 700 }}>Deep Feedback</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Concept coverage scorecard</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="page-content">
             <div className="page-header">

@@ -22,6 +22,7 @@ async def upload_resume(
     file: UploadFile = File(...),
     role: str = Form(...),
     privacy_mode: bool = Form(False),
+    user_email: str = Form(None),
 ):
     """
     Upload a PDF or DOCX resume with a target role and receive a full
@@ -52,6 +53,7 @@ async def upload_resume(
         result["filename"]          = file.filename
         result["detected_skills"]   = skills
         result["sections_detected"] = parsed["sections_detected"]
+        result["raw_text"]          = parsed["raw_text"]
         result["links"]             = parsed["links"]
 
         # ── Persist to Supabase (non-fatal if unavailable) ───────────────────
@@ -65,19 +67,28 @@ async def upload_resume(
             try:
                 sb = get_supabase()
 
-                # Insert resume row
-                resume_resp = sb.table("resumes").insert({
+                # Check for existing resume with same filename + user (deduplication)
+                existing = sb.table("resumes").select("id").eq("filename", file.filename).eq("user_email", user_email).execute()
+                
+                resume_data = {
                     "filename":          file.filename,
-                    "raw_text":          encrypt_text(parsed["raw_text"]),  # encrypted at rest
+                    "raw_text":          encrypt_text(parsed["raw_text"]),
                     "detected_skills":   skills,
                     "sections_detected": parsed["sections_detected"],
                     "links":             parsed["links"],
                     "encrypted":         is_encryption_enabled(),
-                }).execute()
-                resume_id = resume_resp.data[0]["id"]
+                    "user_email":        user_email,
+                }
 
-                # Insert role analysis row
-                analysis_resp = sb.table("role_analyses").insert({
+                if existing.data:
+                    resume_id = existing.data[0]["id"]
+                    sb.table("resumes").update(resume_data).eq("id", resume_id).execute()
+                else:
+                    resume_resp = sb.table("resumes").insert(resume_data).execute()
+                    resume_id = resume_resp.data[0]["id"]
+
+                # Always maintain exactly ONE analysis row per resume (overwrite any previous role)
+                analysis_data = {
                     "resume_id":                 resume_id,
                     "role":                      result["role"],
                     "final_score":               result["final_score"],
@@ -90,8 +101,16 @@ async def upload_resume(
                     "missing_core_skills":       result["missing_core_skills"],
                     "missing_optional_skills":   result["missing_optional_skills"],
                     "recommendations":           result["recommendations"],
-                }).execute()
-                analysis_id = analysis_resp.data[0]["id"]
+                }
+
+                existing_analysis = sb.table("role_analyses").select("id").eq("resume_id", resume_id).execute()
+                
+                if existing_analysis.data:
+                    analysis_id = existing_analysis.data[0]["id"]
+                    sb.table("role_analyses").update(analysis_data).eq("id", analysis_id).execute()
+                else:
+                    analysis_resp = sb.table("role_analyses").insert(analysis_data).execute()
+                    analysis_id = analysis_resp.data[0]["id"]
 
             except EnvironmentError as e:
                 db_warning = f"Supabase not configured — result not saved. {e}"

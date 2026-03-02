@@ -1,38 +1,12 @@
 """
-embed_knowledge.py — One-time script to embed the curated knowledge base into PGVector.
+embed_knowledge.py — One-time script to embed the curated knowledge base into PGVector using Gemini.
 
 Run once after setting up Supabase PGVector extension:
     python -m app.scripts.embed_knowledge
 
 Prerequisites:
-    - SUPABASE_URL, SUPABASE_KEY, OPENAI_API_KEY in .env
-    - 'knowledge_chunks' table and 'match_knowledge' function created in Supabase (see SQL below)
-
-SQL to run in Supabase SQL Editor first:
-    create extension if not exists vector;
-
-    create table if not exists knowledge_chunks (
-        id uuid primary key default uuid_generate_v4(),
-        topic text not null,
-        content text not null,
-        embedding vector(1536),
-        source_version text default 'v1.0',
-        created_at timestamp default now()
-    );
-
-    create or replace function match_knowledge (
-        query_embedding vector(1536),
-        match_count int default 5
-    )
-    returns table (id uuid, topic text, content text, similarity float)
-    language sql stable
-    as $$
-        select id, topic, content,
-               1 - (embedding <=> query_embedding) as similarity
-        from knowledge_chunks
-        order by embedding <=> query_embedding
-        limit match_count;
-    $$;
+    - SUPABASE_URL, SUPABASE_KEY, GEMINI_API_KEY in .env
+    - 'knowledge_chunks' table and 'match_knowledge' function created in Supabase
 """
 
 from __future__ import annotations
@@ -54,7 +28,7 @@ KNOWLEDGE_BASE_DIR = Path(__file__).resolve().parent.parent.parent / "knowledge_
 
 # ── Text Chunker ──────────────────────────────────────────────────────────────
 def chunk_text(text: str, chunk_size: int = 700, overlap: int = 100) -> list[str]:
-    """Simple overlap chunker — no external dependency required."""
+    """Simple overlap chunker."""
     chunks = []
     start = 0
     while start < len(text):
@@ -65,29 +39,35 @@ def chunk_text(text: str, chunk_size: int = 700, overlap: int = 100) -> list[str
 
 
 # ── Embedding ─────────────────────────────────────────────────────────────────
-def embed_text(text: str, client) -> list[float] | None:
+def embed_text(text: str) -> list[float] | None:
     try:
-        resp = client.embeddings.create(model="text-embedding-3-small", input=text)
-        return resp.data[0].embedding
+        import google.generativeai as genai
+        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+        
+        # models/gemini-embedding-001 uses 3072 dimensions
+        embed_res = genai.embed_content(
+            model="models/gemini-embedding-001",
+            content=text,
+            task_type="retrieval_document"
+        )
+        return embed_res['embedding']
     except Exception as e:
-        log.error("Embedding failed: %s", e)
+        log.error("Gemini embedding failed: %s", e)
         return None
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    from openai import OpenAI
     from supabase import create_client
 
-    openai_key = os.getenv("OPENAI_API_KEY")
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_KEY")
+    gemini_key = os.getenv("GEMINI_API_KEY")
 
-    if not all([openai_key, supabase_url, supabase_key]):
-        log.error("Missing environment variables: OPENAI_API_KEY, SUPABASE_URL, SUPABASE_KEY")
+    if not all([supabase_url, supabase_key, gemini_key]):
+        log.error("Missing environment variables: SUPABASE_URL, SUPABASE_KEY, GEMINI_API_KEY")
         sys.exit(1)
 
-    openai_client = OpenAI(api_key=openai_key)
     sb = create_client(supabase_url, supabase_key)
 
     # Clear existing chunks for a clean re-embed
@@ -95,7 +75,7 @@ def main():
     try:
         sb.table("knowledge_chunks").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
     except Exception as e:
-        log.warning("Could not clear chunks (table may not exist yet): %s", e)
+        log.warning("Could not clear chunks: %s", e)
 
     total_inserted = 0
 
@@ -108,7 +88,7 @@ def main():
         chunks = chunk_text(content)
 
         for i, chunk in enumerate(chunks):
-            embedding = embed_text(chunk, openai_client)
+            embedding = embed_text(chunk)
             if embedding is None:
                 log.warning("  Skipping chunk %d (embedding failed)", i)
                 continue
@@ -126,7 +106,7 @@ def main():
                 log.error("  DB insert failed: %s", e)
 
     log.info("=" * 60)
-    log.info("Embedding complete — %d chunks inserted.", total_inserted)
+    log.info("Embedding complete — %d chunks inserted using Gemini.", total_inserted)
     log.info("=" * 60)
 
 

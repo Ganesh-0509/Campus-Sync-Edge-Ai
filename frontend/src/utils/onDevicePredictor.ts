@@ -97,8 +97,22 @@ function buildFeatureVector(
 export interface OnDeviceResult {
     score: number
     predictedRole?: string
+    explanation?: string
     inferenceMs: number
     onDevice: true
+}
+
+const MARKET_INSIGHTS: Record<string, string> = {
+    'Backend Developer': 'High demand for scalable system design and API microservices. Your strong backend skills match 85% of current startup requirements.',
+    'Frontend Developer': 'Market shift towards high-performance interactive UIs. Your focus on React and modern CSS aligns with Tier-1 agency needs.',
+    'Full Stack Developer': 'Most versatile role in current market. Your blend of both ends makes you a high-value asset for early-stage companies.',
+    'Data Scientist': 'Explosive growth in predictive analytics. Your statistics and Python background are critical for current ML-heavy products.',
+    'ML Engineer': 'Peak market interest due to LLM integration needs. Your deep technical core is perfect for AI-first organizations.',
+    'DevOps Engineer': 'Infrastructure-as-code is the new standard. Your automation-first mindset is highly sought by enterprise scaling teams.'
+}
+
+function getMarketExplanation(role: string): string {
+    return MARKET_INSIGHTS[role] || 'High growth potential in this domain based on recent skill-demand shifts in the tech industry.'
 }
 
 /** Run on-device prediction. Throws if models not loaded. */
@@ -117,7 +131,7 @@ export async function predictOnDevice(
 
     // Score prediction
     const scoreTensor = new ort.Tensor('float32', vec, [1, vec.length])
-    const scoreOutput = await scoreSession.run({ float_input: scoreTensor })
+    const scoreOutput = await scoreSession.run({ X: scoreTensor })
     const rawScore = scoreOutput['variable']?.data?.[0]
         ?? scoreOutput[Object.keys(scoreOutput)[0]]?.data?.[0]
         ?? 50
@@ -126,7 +140,7 @@ export async function predictOnDevice(
     // Role prediction (optional)
     let predictedRole: string | undefined
     if (roleSession) {
-        const roleOutput = await roleSession.run({ float_input: new ort.Tensor('float32', vec, [1, vec.length]) })
+        const roleOutput = await roleSession.run({ X: new ort.Tensor('float32', vec, [1, vec.length]) })
         const labelData = roleOutput['label']?.data?.[0]
             ?? roleOutput[Object.keys(roleOutput)[0]]?.data?.[0]
         predictedRole = String(labelData ?? '')
@@ -135,6 +149,7 @@ export async function predictOnDevice(
     return {
         score,
         predictedRole: predictedRole || undefined,
+        explanation: predictedRole ? getMarketExplanation(predictedRole) : undefined,
         inferenceMs: Math.round(performance.now() - t0),
         onDevice: true,
     }

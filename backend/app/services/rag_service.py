@@ -5,7 +5,7 @@ Pipeline:
   1. On cold start, check if knowledge_chunks table has data.
   2. For study material requests:
      a. Try Redis cache first (Phase 2 cache layer).
-     b. If miss → embed the query via OpenAI text-embedding-3-small.
+     b. If miss → embed the query via Gemini gemini-embedding-001.
      c. Call match_knowledge() Supabase RPC to retrieve top-5 relevant chunks.
      d. Inject retrieved context into structured LLM prompt.
      e. Run judge validation pass.
@@ -39,20 +39,25 @@ def _get_sb():
     return get_supabase()
 
 
-# ── OpenAI Embeddings ─────────────────────────────────────────────────────────
+# ── Gemini Embeddings ─────────────────────────────────────────────────────────
 def embed_text(text: str) -> Optional[List[float]]:
-    """Embed a string using OpenAI text-embedding-3-small (1536 dims)."""
-    api_key = os.getenv("OPENAI_API_KEY")
+    """Embed a string using Gemini gemini-embedding-001 (3072 dims)."""
+    api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        log.warning("OPENAI_API_KEY not set — embedding unavailable.")
+        log.warning("GEMINI_API_KEY not set — embedding unavailable.")
         return None
     try:
-        from openai import OpenAI
-        client = OpenAI(api_key=api_key)
-        resp = client.embeddings.create(model="text-embedding-3-small", input=text)
-        return resp.data[0].embedding
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        
+        embed_res = genai.embed_content(
+            model="models/gemini-embedding-001",
+            content=text,
+            task_type="retrieval_query"
+        )
+        return embed_res['embedding']
     except Exception as e:
-        log.error("Embedding failed: %s", e)
+        log.error("Gemini embedding failed: %s", e)
         return None
 
 
@@ -61,7 +66,7 @@ def retrieve_context(query: str, match_count: int = 5) -> List[Dict[str, Any]]:
     """
     Embed the query and retrieve top-k similar chunks from PGVector.
     Returns list of {topic, content, similarity} dicts.
-    Falls back to [] if Supabase or OpenAI are unavailable.
+    Falls back to [] if Supabase or Gemini are unavailable.
     """
     embedding = embed_text(query)
     if embedding is None:

@@ -1078,6 +1078,7 @@ body {
   display: flex;
   flex-direction: column;
   padding: 24px 0;
+  overflow-y: auto;
 }
 
 .sidebar-brand {
@@ -1320,6 +1321,10 @@ body {
   font-weight: 800;
   margin: 0;
   letter-spacing: -0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
 }
 
 .header-skill span {
@@ -1510,6 +1515,35 @@ body {
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-primary);
   border-bottom-left-radius: 4px;
+}
+
+.msg-content p {
+  margin-bottom: 8px;
+}
+
+.msg-content p:last-child {
+  margin-bottom: 0;
+}
+
+.msg-content ul,
+.msg-content ol {
+  margin-left: 20px;
+  margin-bottom: 8px;
+}
+
+.msg-content li {
+  margin-bottom: 4px;
+}
+
+.msg-content code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+.msg--assistant .msg-content strong {
+  color: var(--cyan);
 }
 
 .chat-input-row {
@@ -2463,6 +2497,32 @@ a {
 .auth-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
+}
+
+.btn--success {
+  background: var(--green) !important;
+  color: white !important;
+}
+
+.pulse {
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
 }
 
 .auth-btn:disabled {

@@ -21,6 +21,34 @@ export default function ResumeComparison() {
 
     const diff = currScore - prevScore
 
+    if (!curr || !prev) {
+        return (
+            <div className="page-content">
+                <div style={{ maxWidth: 800, margin: '60px auto', textAlign: 'center' }}>
+                    <div style={{ fontSize: 60, marginBottom: 20 }}>🆚</div>
+                    <h1 className="page-title">Version Comparison Locked</h1>
+                    <p className="page-subtitle">To see side-by-side improvements, you need to upload at least two versions of your resume.</p>
+                    <button className="btn btn--primary" onClick={() => (window.location.href = '/resume-analyzer')} style={{ marginTop: 24 }}>
+                        Upload Second Version
+                    </button>
+                    <div className="card" style={{ marginTop: 40, padding: '24px 32px', textAlign: 'left', background: 'rgba(59,130,246,0.03)' }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', marginBottom: 8 }}>WHY USE COMPARISON?</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                            <div style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
+                                <strong style={{ color: 'var(--green)' }}>✓ Score Delta</strong><br />
+                                Directly see how much your latest changes improved your readiness.
+                            </div>
+                            <div style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
+                                <strong style={{ color: 'var(--blue)' }}>✓ Skill Evolution</strong><br />
+                                Track which skills the AI detected in your new version vs the old one.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="page-content">
             <div className="page-header">

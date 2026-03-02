@@ -81,10 +81,12 @@ def predict_role(
     scored.sort(key=lambda x: -x[0])
     top_matches = scored[:top_k]
 
-    # Weighted role vote
+    # Weighted role vote — consider both similarity AND success (final_score)
     role_weight: dict = defaultdict(float)
-    for sim, role, _ in top_matches:
-        role_weight[role] += sim
+    for sim, role, score in top_matches:
+        # We value similarity but boost it by the success score 
+        # (normalized success score 0-1)
+        role_weight[role] += sim * (score / 100.0)
 
     if not role_weight or all(s == 0 for s in role_weight.values()):
         return {
