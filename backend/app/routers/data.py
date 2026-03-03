@@ -5,9 +5,10 @@ All reads are from Supabase. Aggregations are done in Python since
 Supabase REST API doesn't expose GROUP BY directly.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from collections import defaultdict
 from app.core.supabase_client import get_supabase
+from app.core.auth import get_current_user, AuthUser
 
 router = APIRouter()
 
@@ -136,12 +137,23 @@ def role_stats():
       - Average / min / max score per role
       - Top 10 most frequently missing skills
       - Top 10 most commonly detected skills
+
+    Optimized: selects only needed columns instead of SELECT *.
     """
     try:
         sb = get_supabase()
 
-        analyses = (sb.table("role_analyses").select("*").execute().data or [])
-        resumes  = (sb.table("resumes").select("detected_skills").execute().data or [])
+        # Only fetch the columns we actually aggregate on
+        analyses = (
+            sb.table("role_analyses")
+            .select("role, final_score, missing_core_skills, missing_optional_skills")
+            .execute().data or []
+        )
+        resumes = (
+            sb.table("resumes")
+            .select("detected_skills")
+            .execute().data or []
+        )
 
         # ── Per-role aggregation ─────────────────────────────────────────────
         role_buckets: dict = defaultdict(list)
@@ -273,8 +285,8 @@ def export_dataset():
         raise _db_error(e)
 # ── DELETE /history/{analysis_id} ──────────────────────────────────────────────
 @router.delete("/history/analysis/{analysis_id}")
-def delete_analysis(analysis_id: int):
-    """Delete a single role analysis entry."""
+def delete_analysis(analysis_id: int, user: AuthUser = Depends(get_current_user)):
+    """Delete a single role analysis entry. Requires authentication."""
     try:
         sb = get_supabase()
         sb.table("role_analyses").delete().eq("id", analysis_id).execute()
@@ -283,8 +295,8 @@ def delete_analysis(analysis_id: int):
         raise _db_error(e)
 
 @router.delete("/history/resume/{resume_id}")
-def delete_resume(resume_id: int):
-    """Delete an entire resume record and all its associated analyses."""
+def delete_resume(resume_id: int, user: AuthUser = Depends(get_current_user)):
+    """Delete an entire resume record and all its associated analyses. Requires authentication."""
     try:
         sb = get_supabase()
         sb.table("resumes").delete().eq("id", resume_id).execute()

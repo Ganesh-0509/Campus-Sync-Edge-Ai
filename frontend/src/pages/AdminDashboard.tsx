@@ -12,18 +12,21 @@ import {
 } from '../api/client'
 import { Trash2 } from 'lucide-react'
 import type { AdminStats, Contribution, AdminStudent } from '../api/client'
+import { LoadingState, ErrorState } from '../components/StateDisplay'
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState<AdminStats | null>(null)
     const [contributions, setContributions] = useState<Contribution[]>([])
     const [students, setStudents] = useState<AdminStudent[]>([])
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
     const [filter, setFilter] = useState('')
     const [selectedView, setSelectedView] = useState<string | null>(null)
     const [viewingStudent, setViewingStudent] = useState<AdminStudent | null>(null)
 
     const fetchData = async () => {
         setLoading(true)
+        setError(null)
         try {
             const [s, c, d] = await Promise.all([
                 getAdminStats(),
@@ -33,8 +36,9 @@ export default function AdminDashboard() {
             setStats(s)
             setContributions(c)
             setStudents(d)
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Failed to load admin data:", err)
+            setError(err instanceof Error ? err.message : 'Failed to load admin data')
         } finally {
             setLoading(false)
         }
@@ -71,8 +75,14 @@ export default function AdminDashboard() {
     )
 
     if (loading && !selectedView) return (
-        <div className="page-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-            <div className="spinner"></div>
+        <div className="page-content">
+            <LoadingState message="Loading admin data..." />
+        </div>
+    )
+
+    if (error && !stats) return (
+        <div className="page-content">
+            <ErrorState title="Failed to load admin data" message={error} onRetry={fetchData} />
         </div>
     )
 

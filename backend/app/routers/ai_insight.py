@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from app.services.ai_service import ai_service
@@ -6,6 +6,7 @@ from app.services.curriculum_graph import (
     get_prerequisites, get_unlocked_skills, get_learning_path,
     get_curriculum_overview, can_unlock
 )
+from app.core.rate_limiter import ai_limit
 
 router = APIRouter(prefix="/ai", tags=["AI Insights"])
 
@@ -25,7 +26,8 @@ class ContributionRequest(BaseModel):
     notes_content: Dict[str, Any]
 
 @router.post("/market-forecast")
-async def get_forecast(req: ForecastRequest):
+@ai_limit
+async def get_forecast(request: Request, req: ForecastRequest):
     """Get a dynamic market forecast."""
     if not req.role or not req.missing_skills:
         raise HTTPException(status_code=400, detail="Role and missing skills required.")

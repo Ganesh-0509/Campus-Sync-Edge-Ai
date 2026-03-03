@@ -3,19 +3,21 @@ import { useNavigate } from 'react-router-dom'
 import { useResume } from '../context/ResumeContext'
 import { BarChart2 } from 'lucide-react'
 import SkillGraphViz from '../components/SkillGraphViz'
+import { ErrorState } from '../components/StateDisplay'
 import { BASE } from '../api/client'
 
 export default function SkillGap() {
     const navigate = useNavigate()
     const { analysis, masteredSkills } = useResume()
     const [deps, setDeps] = useState<Record<string, string[]>>({})
+    const [depsError, setDepsError] = useState(false)
     const [showGraph, setShowGraph] = useState(true)
 
     useEffect(() => {
         fetch(`${BASE}/interview/dependencies`)
             .then(r => r.json())
             .then(d => setDeps(d))
-            .catch(() => { })
+            .catch(() => setDepsError(true))
     }, [])
 
     const coreMissing = (analysis?.missing_core_skills ?? []).filter((s: string) => !masteredSkills.includes(s))

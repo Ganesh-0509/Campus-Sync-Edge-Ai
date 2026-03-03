@@ -75,7 +75,7 @@ export default function ImprovementPlan() {
     const { analysis, masteredSkills, dailyCommitment, setDailyCommitment, markSkillMastered } = useResume()
     const location = useLocation()
     const navigate = useNavigate()
-    const highlightSkill = (location.state as any)?.highlightSkill
+    const highlightSkill = (location.state as { highlightSkill?: string } | null)?.highlightSkill
 
     const role = analysis?.role ?? 'Software Developer'
     const missingCore = analysis?.missing_core_skills ?? []
@@ -84,9 +84,16 @@ export default function ImprovementPlan() {
     const plan = useMemo(() => buildAdaptivePlan(missingCore, missingOpt), [analysis])
     const [activeStudy, setActiveStudy] = useState<string | null>(null)
     const [aiForecast, setAiForecast] = useState<ForecastResult | null>(null)
+    const [forecastLoading, setForecastLoading] = useState(false)
+    const [forecastError, setForecastError] = useState<string | null>(null)
 
     useEffect(() => {
-        getMarketForecast(role, missingCore).then(setAiForecast).catch(() => { })
+        setForecastLoading(true)
+        setForecastError(null)
+        getMarketForecast(role, missingCore)
+            .then(setAiForecast)
+            .catch(err => setForecastError(err?.message || 'Failed to load market forecast'))
+            .finally(() => setForecastLoading(false))
     }, [role])
 
     // Level-based locking logic
@@ -170,7 +177,20 @@ export default function ImprovementPlan() {
                 </div>
 
                 {/* AI Insights Card */}
-                {aiForecast && (
+                {forecastLoading && (
+                    <div className="hero" style={{ padding: '16px 20px', marginBottom: 20, border: '1px solid var(--border)', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'center' }}>
+                            <div className="spinner spinner--sm" />
+                            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Loading market forecast...</span>
+                        </div>
+                    </div>
+                )}
+                {forecastError && !forecastLoading && (
+                    <div style={{ padding: '12px 16px', marginBottom: 20, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12, fontSize: 13, color: 'var(--red)' }}>
+                        {forecastError}
+                    </div>
+                )}
+                {aiForecast && !forecastLoading && (
                     <div className="hero" style={{ padding: '16px 20px', marginBottom: 20, border: '1px solid rgba(34, 197, 94, 0.2)' }}>
                         <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                             <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(34, 197, 94, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>📈</div>

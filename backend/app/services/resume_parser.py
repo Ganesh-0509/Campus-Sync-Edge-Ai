@@ -3,22 +3,30 @@ from docx import Document
 import io
 import re
 
-# Heading keywords that signal each section
+# Heading keywords that signal each section (expanded for more resume formats)
 SECTION_INDICATORS = {
     "skills": [
         "skills", "technical skills", "tech stack",
-        "technologies", "core competencies", "key skills"
+        "technologies", "core competencies", "key skills",
+        "tools & technologies", "programming skills",
+        "technical proficiency", "skill set", "skillset",
+        "areas of expertise", "competencies",
     ],
     "projects": [
         "projects", "academic projects", "personal projects",
-        "experience", "work experience", "project experience"
+        "experience", "work experience", "project experience",
+        "professional experience", "internship", "internships",
+        "relevant experience", "key projects", "capstone",
     ],
     "education": [
         "education", "academic background", "qualifications",
-        "academic qualifications", "academics"
+        "academic qualifications", "academics",
+        "educational background", "degrees", "certifications",
+        "courses", "coursework", "relevant coursework",
     ],
     "links": [
-        "github", "linkedin", "portfolio", "profiles", "social"
+        "github", "linkedin", "portfolio", "profiles", "social",
+        "links", "contact", "websites", "online presence",
     ],
 }
 
@@ -27,7 +35,10 @@ def _extract_text_from_pdf(file_bytes: bytes) -> str:
     text = ""
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
         for page in pdf.pages:
-            page_text = page.extract_text()
+            # Try table extraction first for structured content
+            page_text = page.extract_text(layout=True)
+            if not page_text:
+                page_text = page.extract_text()
             if page_text:
                 text += page_text + "\n"
     return text.strip()
@@ -35,13 +46,25 @@ def _extract_text_from_pdf(file_bytes: bytes) -> str:
 
 def _extract_text_from_docx(file_bytes: bytes) -> str:
     doc = Document(io.BytesIO(file_bytes))
-    return "\n".join(p.text for p in doc.paragraphs).strip()
+    parts = []
+    for p in doc.paragraphs:
+        if p.text.strip():
+            parts.append(p.text)
+    # Also extract text from tables (many resumes use table layouts)
+    for table in doc.tables:
+        for row in table.rows:
+            cells_text = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+            if cells_text:
+                parts.append(" | ".join(cells_text))
+    return "\n".join(parts).strip()
 
 
 def _clean_text(text: str) -> str:
-    text = re.sub(r"\(cid:\d+\)", " ", text)   # PDF encoding artifacts
-    text = re.sub(r"-\s+", "", text)            # broken hyphenated words
-    text = re.sub(r"[ \t]+", " ", text)         # collapse spaces/tabs
+    text = re.sub(r"\(cid:\d+\)", " ", text)       # PDF encoding artifacts
+    text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", " ", text)  # Control chars
+    text = re.sub(r"-\s+", "", text)                # broken hyphenated words
+    text = re.sub(r"[ \t]+", " ", text)             # collapse spaces/tabs
+    text = re.sub(r"\n{3,}", "\n\n", text)          # collapse excessive newlines
     return text.strip()
 
 
@@ -57,22 +80,37 @@ def _extract_links(text: str) -> list:
 
 
 def _detect_sections(text: str) -> dict:
-    """Split resume text into labelled sections by heading detection."""
+    """Split resume text into labelled sections by heading detection.
+    
+    Improved: handles UPPERCASE headings, headings with colons/dashes,
+    and headings that are part of a longer line (e.g. 'SKILLS: Python, Java').
+    """
     lines = text.split("\n")
     current_section = None
     section_content = {s: [] for s in SECTION_INDICATORS}
 
     for line in lines:
         stripped = line.strip()
-        stripped_lower = stripped.lower()
+        # Normalize: remove trailing colons, dashes, underscores
+        normalized = re.sub(r"[\s:—\-_]+$", "", stripped).lower()
         matched = None
 
         for section, indicators in SECTION_INDICATORS.items():
             if any(
-                stripped_lower == kw or stripped_lower.startswith(kw)
+                normalized == kw
+                or normalized.startswith(kw + " ")
+                or normalized.startswith(kw + ":")
+                or normalized == kw.upper()
                 for kw in indicators
             ):
                 matched = section
+                # If the heading line also contains content after a colon,
+                # capture that content too
+                colon_idx = stripped.find(":")
+                if colon_idx > 0 and colon_idx < len(stripped) - 1:
+                    rest = stripped[colon_idx + 1:].strip()
+                    if rest:
+                        section_content[section].append(rest)
                 break
 
         if matched:

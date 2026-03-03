@@ -11,15 +11,24 @@
  *   }
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- onnxruntime-web loaded dynamically; strict types break with dynamic import */
 let ort: any = null
 let scoreSession: any = null
 let roleSession: any = null
 let vocabulary: string[] = []
+let _initPromise: Promise<boolean> | null = null
 
 export const ON_DEVICE_AVAILABLE = typeof window !== 'undefined' && 'WebAssembly' in window
 
-/** Load models + vocab once (call at app start or lazily). */
+/** Load models + vocab once. Deduplicates concurrent calls. */
 export async function initOnDevice(): Promise<boolean> {
+    if (scoreSession) return true          // already loaded
+    if (_initPromise) return _initPromise  // loading in progress
+    _initPromise = _doInit()
+    return _initPromise
+}
+
+async function _doInit(): Promise<boolean> {
     if (!ON_DEVICE_AVAILABLE) return false
     try {
         // Dynamic import so it doesn't break SSR / non-ONNX builds
@@ -58,7 +67,7 @@ export async function initOnDevice(): Promise<boolean> {
             })
         } catch { /* role model optional */ }
 
-        console.log('[OnDevice] Models loaded — on-device inference ready ✅')
+        // Models loaded successfully
         return true
     } catch (e) {
         console.warn('[OnDevice] Models not found — server-side inference used', e)
@@ -75,12 +84,12 @@ function buildFeatureVector(
     coreCov: number,
     optCov: number,
 ): Float32Array {
-    const skillsLower = skills.map(s => s.toLowerCase())
+    const skillSet = new Set(skills.map(s => s.toLowerCase()))
     const vec = new Float32Array(vocabulary.length + 5)
 
-    // Binary skill encoding
+    // Binary skill encoding — O(V) with Set lookup instead of O(V²)
     vocabulary.forEach((v, i) => {
-        vec[i] = skillsLower.includes(v.toLowerCase()) ? 1 : 0
+        vec[i] = skillSet.has(v.toLowerCase()) ? 1 : 0
     })
 
     // Numeric features (normalised to 0-1)
@@ -115,7 +124,7 @@ function getMarketExplanation(role: string): string {
     return MARKET_INSIGHTS[role] || 'High growth potential in this domain based on recent skill-demand shifts in the tech industry.'
 }
 
-/** Run on-device prediction. Throws if models not loaded. */
+/** Run on-device prediction. Auto-inits models if needed. */
 export async function predictOnDevice(
     skills: string[],
     projectScore: number,
@@ -124,7 +133,11 @@ export async function predictOnDevice(
     coreCov: number,
     optCov: number,
 ): Promise<OnDeviceResult> {
-    if (!scoreSession) throw new Error('Score model not loaded')
+    // Lazy init — loads ONNX + models on first prediction, not at app start
+    if (!scoreSession) {
+        const ok = await initOnDevice()
+        if (!ok) throw new Error('On-device models could not be loaded')
+    }
 
     const t0 = performance.now()
     const vec = buildFeatureVector(skills, projectScore, atsScore, structScore, coreCov, optCov)

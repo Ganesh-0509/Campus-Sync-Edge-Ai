@@ -25,6 +25,7 @@ _role_model:    object        = None   # RandomForestClassifier
 _label_encoder: object        = None   # sklearn LabelEncoder
 _score_model:   object        = None   # RandomForestRegressor
 _vocabulary:    list[str]     = None   # sorted skill vocab
+_vocab_index:   dict[str, int] = None  # pre-built index for O(1) lookup
 _metadata:      dict          = None   # metadata_v2.json
 _loaded:        bool          = False
 
@@ -36,7 +37,7 @@ def load_models() -> None:
 
     Raises RuntimeError if any required file is missing.
     """
-    global _role_model, _label_encoder, _score_model, _vocabulary, _metadata, _loaded
+    global _role_model, _label_encoder, _score_model, _vocabulary, _vocab_index, _metadata, _loaded
 
     if _loaded:
         return
@@ -69,6 +70,9 @@ def load_models() -> None:
     # ── Vocabulary ────────────────────────────────────────────────────────────
     with open(required["vocabulary_v2.pkl"], "rb") as f:
         _vocabulary = pickle.load(f)
+
+    # Pre-build vocabulary index (avoids O(V) dict creation on every predict call)
+    _vocab_index = {v: i for i, v in enumerate(_vocabulary)}
 
     # ── Metadata ──────────────────────────────────────────────────────────────
     with open(required["metadata_v2.json"], "r", encoding="utf-8") as f:
@@ -118,6 +122,12 @@ def get_score_model():
 def get_vocabulary() -> list[str]:
     _assert_loaded("get_vocabulary")
     return _vocabulary
+
+
+def get_vocab_index() -> dict[str, int]:
+    """Pre-built {skill: index} dict. O(1) lookup instead of rebuilding every call."""
+    _assert_loaded("get_vocab_index")
+    return _vocab_index
 
 
 def get_metadata() -> dict:

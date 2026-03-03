@@ -12,6 +12,14 @@ _SCORING_CONFIG = load_scoring()
 _WEIGHTS        = _SCORING_CONFIG["weights"]
 _THRESHOLDS     = _SCORING_CONFIG["readiness_thresholds"]
 
+# ── Skill importance weights (high-value skills count more) ────────────────────
+_IMPORTANCE_CFG = _SCORING_CONFIG.get("skill_importance", {})
+_SKILL_WEIGHT: dict[str, float] = {}
+for _tier in _IMPORTANCE_CFG.values():
+    _w = _tier.get("weight", 1.0)
+    for _s in _tier.get("skills", []):
+        _SKILL_WEIGHT[_s] = _w
+
 # Four possible resume sections; each contributes equally to structure score
 _EXPECTED_SECTIONS = ["skills", "projects", "education", "links"]
 
@@ -62,6 +70,21 @@ def apply_locked_formula(
 
 
 # ── Readiness classification ───────────────────────────────────────────────────
+
+def weighted_coverage(matched: list, pool: list) -> float:
+    """
+    Compute weighted coverage: skills in skill_importance.high count 1.5×,
+    medium 1.0×, low 0.7×, unlisted 1.0×.  Falls back to simple ratio when
+    no importance config is present.
+    """
+    if not pool:
+        return 0.0
+    if not _SKILL_WEIGHT:
+        return len(matched) / len(pool)
+    total_weight = sum(_SKILL_WEIGHT.get(s, 1.0) for s in pool)
+    achieved     = sum(_SKILL_WEIGHT.get(s, 1.0) for s in matched)
+    return achieved / total_weight if total_weight else 0.0
+
 
 def get_readiness_category(final_score: int) -> str:
     """

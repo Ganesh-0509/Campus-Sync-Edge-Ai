@@ -19,6 +19,7 @@ export default function ReadinessScore() {
     const { privacy } = usePrivacy()
     const { user } = useAuth()
     const [switching, setSwitching] = useState(false)
+    const [switchError, setSwitchError] = useState<string | null>(null)
 
     const score = analysis?.final_score ?? 0
     const current = getReadinessClass(score)
@@ -113,14 +114,18 @@ export default function ReadinessScore() {
                                 </div>
 
                                 {bestFit && bestFit.predicted_role !== analysis?.role && (
+                                    <>
                                     <button
                                         className="btn btn--primary btn--sm"
                                         onClick={async () => {
                                             if (!currentFile || !bestFit.predicted_role) return
                                             setSwitching(true)
+                                            setSwitchError(null)
                                             try {
                                                 const result = await uploadResume(currentFile, bestFit.predicted_role, privacy, user?.email)
                                                 setAnalysis(result)
+                                            } catch (err: unknown) {
+                                                setSwitchError(err instanceof Error ? err.message : 'Failed to switch role. Please try again.')
                                             } finally {
                                                 setSwitching(false)
                                             }
@@ -134,6 +139,12 @@ export default function ReadinessScore() {
                                     >
                                         {switching ? <div className="spinner spinner--sm" /> : <><Zap size={14} /> {score < 50 ? 'Switch to Highest Match Role' : 'Apply Suggested Path'}</>}
                                     </button>
+                                    {switchError && (
+                                        <div style={{ marginTop: 8, padding: '8px 12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--red)' }}>
+                                            {switchError}
+                                        </div>
+                                    )}
+                                    </>
                                 )}
                             </div>
                         </>

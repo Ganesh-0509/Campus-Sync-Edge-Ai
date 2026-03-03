@@ -1,6 +1,117 @@
+import { supabase } from '../lib/supabase'
+
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export { BASE }
+
+// ── Cached auth token (avoids hitting supabase.auth.getSession() on every call) ──
+let _cachedToken: string | null = null
+let _tokenExpiry = 0
+
+async function getAuthToken(): Promise<string | null> {
+    const now = Date.now()
+    if (_cachedToken && now < _tokenExpiry) return _cachedToken
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.access_token) {
+        _cachedToken = session.access_token
+        // Cache for 55s (tokens typically live 60s+)
+        _tokenExpiry = now + 55_000
+        return _cachedToken
+    }
+    _cachedToken = null
+    _tokenExpiry = 0
+    return null
+}
+
+// Invalidate cache when auth state changes
+supabase.auth.onAuthStateChange(() => {
+    _cachedToken = null
+    _tokenExpiry = 0
+})
+
+// ── Generic fetch wrapper (DRY: auth, errors, typing in one place) ──
+
+interface FetchOptions extends Omit<RequestInit, 'body'> {
+    body?: unknown
+    noAuth?: boolean
+    signal?: AbortSignal
+    rawBody?: BodyInit  // for FormData etc.
+    retries?: number    // max retry attempts (default: 0 = no retry)
+}
+
+/** Sleep helper for exponential backoff */
+function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)) }
+
+async function apiFetch<T>(path: string, opts: FetchOptions = {}): Promise<T> {
+    const { body, noAuth, rawBody, retries = 0, ...init } = opts
+    const headers: Record<string, string> = {}
+
+    // Auth header (skip for noAuth)
+    if (!noAuth) {
+        const token = await getAuthToken()
+        if (token) headers['Authorization'] = `Bearer ${token}`
+    }
+
+    // Content-Type for JSON bodies (skip for FormData)
+    if (body !== undefined) {
+        headers['Content-Type'] = 'application/json'
+    }
+
+    let lastError: Error | null = null
+    const maxAttempts = retries + 1
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+            const res = await fetch(`${BASE}${path}`, {
+                ...init,
+                headers: { ...headers, ...(init.headers as Record<string, string> ?? {}) },
+                body: rawBody ?? (body !== undefined ? JSON.stringify(body) : undefined),
+            })
+
+            if (!res.ok) {
+                const msg = await res.text().catch(() => `Request failed (${res.status})`)
+                // Don't retry 4xx client errors
+                if (res.status >= 400 && res.status < 500) {
+                    throw new Error(msg)
+                }
+                throw new Error(msg)
+            }
+
+            return res.json()
+        } catch (err: unknown) {
+            lastError = err instanceof Error ? err : new Error(String(err))
+            // Don't retry if aborted or client error
+            if (err instanceof Error && err.name === 'AbortError') throw err
+            if (attempt < maxAttempts - 1) {
+                // Exponential backoff: 500ms, 1s, 2s, 4s...
+                await sleep(500 * Math.pow(2, attempt))
+            }
+        }
+    }
+
+    throw lastError!
+}
+
+/**
+ * Create an AbortController that auto-cancels in-flight requests.
+ * Use in useEffect cleanup:
+ *   const ctl = makeAbortController()
+ *   apiFetch('/path', { signal: ctl.signal })
+ *   return () => ctl.abort()
+ */
+export function makeAbortController() { return new AbortController() }
+
+// ── Stale-while-revalidate cache for stable endpoints ──
+const _cache = new Map<string, { data: unknown; expiry: number }>()
+
+async function cachedFetch<T>(path: string, ttlMs: number): Promise<T> {
+    const cached = _cache.get(path)
+    if (cached && Date.now() < cached.expiry) return cached.data as T
+    const data = await apiFetch<T>(path, { noAuth: true })
+    _cache.set(path, { data, expiry: Date.now() + ttlMs })
+    return data
+}
 
 export interface UploadResult {
     role: string
@@ -52,12 +163,7 @@ export async function uploadResume(file: File, role: string, privacyMode: boolea
     fd.append('role', role)
     fd.append('privacy_mode', String(privacyMode))
     if (userEmail) fd.append('user_email', userEmail)
-    const res = await fetch(`${BASE}/upload`, { method: 'POST', body: fd })
-    if (!res.ok) {
-        const err = await res.text().catch(() => 'Upload failed')
-        throw new Error(err)
-    }
-    return res.json()
+    return apiFetch<UploadResult>('/upload', { method: 'POST', rawBody: fd })
 }
 
 // ── ML Predict ────────────────────────────────────────────────
@@ -69,13 +175,7 @@ export async function predictResume(data: {
     core_coverage: number
     optional_coverage: number
 }): Promise<PredictResult> {
-    const res = await fetch(`${BASE}/predict`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-    })
-    if (!res.ok) throw new Error('Prediction failed')
-    return res.json()
+    return apiFetch<PredictResult>('/predict', { method: 'POST', body: data })
 }
 
 /** Pure skill-based role prediction (Similarity Engine) */
@@ -88,13 +188,7 @@ export async function predictBestFit(data: {
     sections_detected: string[]
     current_role: string
 }): Promise<PredictResult> {
-    const res = await fetch(`${BASE}/ml/predict-role`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-    })
-    if (!res.ok) throw new Error('Best fit prediction failed')
-    const result = await res.json()
+    const result = await apiFetch<any>('/ml/predict-role', { method: 'POST', body: data })
     return {
         predicted_role: result.predicted_role,
         confidence: result.confidence,
@@ -105,46 +199,49 @@ export async function predictBestFit(data: {
     }
 }
 
-// ── Roles list ────────────────────────────────────────────────
+// ── Roles list (cached 5 min) ────────────────────────────────
 export async function getRoles(): Promise<string[]> {
-    const res = await fetch(`${BASE}/roles`)
-    if (!res.ok) return ['Software Developer', 'Backend Developer', 'Frontend Developer', 'Full Stack Developer', 'Data Scientist', 'ML Engineer', 'DevOps Engineer']
-    const data = await res.json()
-    // Backend returns { valid_roles: [...] }
-    return Array.isArray(data) ? data : data.valid_roles ?? data.roles ?? []
+    try {
+        const data = await cachedFetch<any>('/roles', 5 * 60_000)
+        return Array.isArray(data) ? data : data.valid_roles ?? data.roles ?? []
+    } catch {
+        return ['Software Developer', 'Backend Developer', 'Frontend Developer', 'Full Stack Developer', 'Data Scientist', 'ML Engineer', 'DevOps Engineer']
+    }
 }
 
 // ── Analytics ─────────────────────────────────────────────────
 export async function getAnalytics(): Promise<Record<string, unknown>> {
-    const res = await fetch(`${BASE}/analytics/role-stats`)
-    if (!res.ok) return {}
-    return res.json()
+    try {
+        return await apiFetch<Record<string, unknown>>('/analytics/role-stats', { noAuth: true })
+    } catch {
+        return {}
+    }
 }
 
 // ── History ───────────────────────────────────────────────────
 export async function getHistory(resumeId: number): Promise<unknown> {
-    const res = await fetch(`${BASE}/history/${resumeId}`)
-    if (!res.ok) return null
-    return res.json()
+    try {
+        return await apiFetch<unknown>(`/history/${resumeId}`, { noAuth: true })
+    } catch {
+        return null
+    }
 }
 
 export async function deleteAnalysis(id: number): Promise<{ status: string }> {
-    const res = await fetch(`${BASE}/history/analysis/${id}`, { method: 'DELETE' })
-    if (!res.ok) throw new Error('Deletion failed')
-    return res.json()
+    return apiFetch<{ status: string }>(`/history/analysis/${id}`, { method: 'DELETE' })
 }
 
 export async function deleteResume(id: number): Promise<{ status: string }> {
-    const res = await fetch(`${BASE}/history/resume/${id}`, { method: 'DELETE' })
-    if (!res.ok) throw new Error('Deletion failed')
-    return res.json()
+    return apiFetch<{ status: string }>(`/history/resume/${id}`, { method: 'DELETE' })
 }
 
-// ── Health ────────────────────────────────────────────────────
+// ── Health (cached 30s) ──────────────────────────────────────
 export async function getHealth(): Promise<HealthResult> {
-    const res = await fetch(`${BASE}/health`)
-    if (!res.ok) return { status: 'error', model_loaded: false }
-    return res.json()
+    try {
+        return await cachedFetch<HealthResult>('/health', 30_000)
+    } catch {
+        return { status: 'error', model_loaded: false }
+    }
 }
 
 // ── AI Forecast ───────────────────────────────────────────────
@@ -156,13 +253,11 @@ export interface ForecastResult {
 }
 
 export async function getMarketForecast(role: string, missingSkills: string[]): Promise<ForecastResult> {
-    const res = await fetch(`${BASE}/ai/market-forecast`, {
+    return apiFetch<ForecastResult>('/ai/market-forecast', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role, missing_skills: missingSkills })
+        body: { role, missing_skills: missingSkills },
+        retries: 2,
     })
-    if (!res.ok) throw new Error('AI Forecast failed')
-    return res.json()
 }
 
 export interface DetailedContent {
@@ -203,25 +298,19 @@ export interface QuizResult {
 
 export async function getStudyNotes(skill: string, masteredSkills: string[] = []): Promise<StudyNotesResult> {
     const skills = masteredSkills.join(',')
-    const res = await fetch(`${BASE}/ai/study/notes?skill=${encodeURIComponent(skill)}&existing_skills=${encodeURIComponent(skills)}`)
-    if (!res.ok) throw new Error('Failed to load study notes')
-    return res.json()
+    return apiFetch<StudyNotesResult>(`/ai/study/notes?skill=${encodeURIComponent(skill)}&existing_skills=${encodeURIComponent(skills)}`, { noAuth: true, retries: 1 })
 }
 
 export async function getStudyQuiz(skill: string): Promise<QuizResult> {
-    const res = await fetch(`${BASE}/ai/study/quiz?skill=${encodeURIComponent(skill)}`)
-    if (!res.ok) throw new Error('AI Quiz failed')
-    return res.json()
+    return apiFetch<QuizResult>(`/ai/study/quiz?skill=${encodeURIComponent(skill)}`, { noAuth: true, retries: 1 })
 }
 
-export async function studyChat(skill: string, query: string, history: any[] = [], masteredSkills: string[] = []): Promise<string> {
-    const res = await fetch(`${BASE}/ai/study/chat`, {
+export async function studyChat(skill: string, query: string, history: Array<{ role: string; content: string }> = [], masteredSkills: string[] = []): Promise<string> {
+    const data = await apiFetch<{ response: string }>('/ai/study/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ skill, query, history, mastered_skills: masteredSkills })
+        body: { skill, query, history, mastered_skills: masteredSkills },
+        noAuth: true
     })
-    if (!res.ok) throw new Error('Chat failed')
-    const data = await res.json()
     return data.response
 }
 
@@ -260,49 +349,38 @@ export interface Contribution {
     created_at: string
 }
 
-export async function submitContribution(skill: string, submitted_by: string, notes_content: any): Promise<{ status: string }> {
-    const res = await fetch(`${BASE}/ai/study/contribute`, {
+export async function submitContribution(skill: string, submitted_by: string, notes_content: Record<string, unknown>): Promise<{ status: string }> {
+    return apiFetch<{ status: string }>('/ai/study/contribute', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ skill, submitted_by, notes_content })
+        body: { skill, submitted_by, notes_content }
     })
-    if (!res.ok) throw new Error('Failed to submit contribution')
-    return res.json()
 }
 
 export async function getAdminStats(): Promise<AdminStats> {
-    const res = await fetch(`${BASE}/ai/admin/stats`)
-    if (!res.ok) throw new Error('Failed to load admin stats')
-    return res.json()
+    return apiFetch<AdminStats>('/ai/admin/stats')
 }
 
 export async function getPendingContributions(): Promise<Contribution[]> {
-    const res = await fetch(`${BASE}/ai/admin/contributions`)
-    if (!res.ok) throw new Error('Failed to load contributions')
-    return res.json()
+    return apiFetch<Contribution[]>('/ai/admin/contributions', { noAuth: true })
 }
 
 export async function approveContribution(id: number): Promise<{ status: string }> {
-    const res = await fetch(`${BASE}/ai/admin/contributions/${id}/approve`, { method: 'POST' })
-    if (!res.ok) throw new Error('Approval failed')
-    return res.json()
+    return apiFetch<{ status: string }>(`/ai/admin/contributions/${id}/approve`, { method: 'POST' })
 }
 
 export async function rejectContribution(id: number): Promise<{ status: string }> {
-    const res = await fetch(`${BASE}/ai/admin/contributions/${id}/reject`, { method: 'POST' })
-    if (!res.ok) throw new Error('Rejection failed')
-    return res.json()
+    return apiFetch<{ status: string }>(`/ai/admin/contributions/${id}/reject`, { method: 'POST' })
 }
 
 export async function getFullDataset(): Promise<AdminStudent[]> {
-    const res = await fetch(`${BASE}/export/dataset`)
-    if (!res.ok) throw new Error('Failed to load full dataset')
-    const data = await res.json()
+    const data = await apiFetch<{ dataset?: AdminStudent[] }>('/export/dataset', { noAuth: true })
     return data.dataset || []
 }
 
 export async function getLatestSession(email: string): Promise<{ analysis: UploadResult | null; prediction: PredictResult | null }> {
-    const res = await fetch(`${BASE}/session/latest/${encodeURIComponent(email)}`)
-    if (!res.ok) return { analysis: null, prediction: null }
-    return res.json()
+    try {
+        return await apiFetch<{ analysis: UploadResult | null; prediction: PredictResult | null }>(`/session/latest/${encodeURIComponent(email)}`)
+    } catch {
+        return { analysis: null, prediction: null }
+    }
 }

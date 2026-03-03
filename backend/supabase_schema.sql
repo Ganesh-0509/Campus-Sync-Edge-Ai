@@ -120,3 +120,19 @@ AS $$
     ORDER BY embedding <=> query_embedding
     LIMIT match_count;
 $$;
+
+-- 6. User feedback / corrections on predictions
+CREATE TABLE IF NOT EXISTS prediction_feedback (
+    id              BIGSERIAL    PRIMARY KEY,
+    analysis_id     BIGINT       REFERENCES role_analyses(id) ON DELETE SET NULL,
+    user_email      TEXT,
+    predicted_role  TEXT         NOT NULL,
+    correct_role    TEXT,            -- null = user confirms prediction was right
+    score_feedback  TEXT CHECK (score_feedback IN ('too_high', 'too_low', 'accurate')),
+    comment         TEXT,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_feedback_user    ON prediction_feedback(user_email);
+CREATE INDEX IF NOT EXISTS idx_feedback_created ON prediction_feedback(created_at);
+ALTER TABLE prediction_feedback DISABLE ROW LEVEL SECURITY;

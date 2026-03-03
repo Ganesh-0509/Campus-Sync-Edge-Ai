@@ -1,41 +1,76 @@
-import { createContext, useContext, useState, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { supabase } from '../lib/supabase'
+import type { Session, User as SupaUser } from '@supabase/supabase-js'
 
-interface User { name: string; email: string }
+export interface User { name: string; email: string }
 interface AuthState {
     user: User | null
+    session: Session | null
+    loading: boolean
     login: (email: string, password: string) => Promise<void>
     signup: (name: string, email: string, password: string) => Promise<void>
     logout: () => void
 }
 
 const Ctx = createContext<AuthState | null>(null)
-const LS = 'cse_user'
+
+function toAppUser(su: SupaUser | null | undefined): User | null {
+    if (!su || !su.email) return null
+    return {
+        name: su.user_metadata?.name || su.email.split('@')[0],
+        email: su.email,
+    }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(() => {
-        try { return JSON.parse(localStorage.getItem(LS) || 'null') }
-        catch { return null }
-    })
+    const [session, setSession] = useState<Session | null>(null)
+    const [user, setUser] = useState<User | null>(null)
+    const [loading, setLoading] = useState(true)
 
-    const login = async (email: string, _: string) => {
-        // Demo: accept any credentials (swap with Supabase auth later)
-        const u: User = { name: email.split('@')[0], email }
-        setUser(u)
-        localStorage.setItem(LS, JSON.stringify(u))
+    /* ── Bootstrap: get existing session + subscribe to changes ── */
+    useEffect(() => {
+        // 1. Get the current session on mount
+        supabase.auth.getSession().then(({ data: { session: s } }) => {
+            setSession(s)
+            setUser(toAppUser(s?.user))
+            setLoading(false)
+        })
+
+        // 2. Listen for future auth events (login, logout, token refresh)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            (_event, s) => {
+                setSession(s)
+                setUser(toAppUser(s?.user))
+            },
+        )
+
+        return () => subscription.unsubscribe()
+    }, [])
+
+    /* ── Actions ────────────────────────────────────────────────── */
+    const login = async (email: string, password: string) => {
+        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) throw new Error(error.message)
     }
 
-    const signup = async (name: string, email: string, _: string) => {
-        const u: User = { name, email }
-        setUser(u)
-        localStorage.setItem(LS, JSON.stringify(u))
+    const signup = async (name: string, email: string, password: string) => {
+        const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { name } },
+        })
+        if (error) throw new Error(error.message)
     }
 
     const logout = () => {
-        setUser(null)
-        localStorage.removeItem(LS)
+        supabase.auth.signOut()
     }
 
-    return <Ctx.Provider value={{ user, login, signup, logout }}>{children}</Ctx.Provider>
+    return (
+        <Ctx.Provider value={{ user, session, loading, login, signup, logout }}>
+            {children}
+        </Ctx.Provider>
+    )
 }
 
 export function useAuth() {

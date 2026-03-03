@@ -9,12 +9,21 @@ Original load_dataset() is preserved for Phase 4A similarity engine.
 
 from app.core.supabase_client import get_supabase
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
 # ── Sample weights ─────────────────────────────────────────────────────────────
 WEIGHT_REAL      = 1.5
 WEIGHT_SYNTHETIC = 1.0
+
+# ── TTL cache for dataset (avoids hitting Supabase on every ML endpoint) ──────
+_dataset_cache: list[dict] | None = None
+_dataset_cache_ts: float = 0
+_DATASET_TTL = 300  # 5 minutes
+
+_combined_cache: list[dict] | None = None
+_combined_cache_ts: float = 0
 
 _NUMERIC_FIELDS = [
     "core_coverage_percent",
@@ -53,7 +62,14 @@ def load_dataset() -> list[dict]:
     """
     Fetch role_analyses joined with resume detected_skills.
     Used by Phase 4A similarity / projection engines.
+    Results cached for 5 minutes to avoid repeated Supabase calls.
     """
+    global _dataset_cache, _dataset_cache_ts
+
+    now = time.monotonic()
+    if _dataset_cache is not None and (now - _dataset_cache_ts) < _DATASET_TTL:
+        return _dataset_cache
+
     try:
         sb = get_supabase()
 
@@ -91,6 +107,9 @@ def load_dataset() -> list[dict]:
                 "final_score":     int(score),
                 "detected_skills": [s.lower().strip() for s in skills if s],
             })
+
+        _dataset_cache = records
+        _dataset_cache_ts = time.monotonic()
         return records
 
     except EnvironmentError:

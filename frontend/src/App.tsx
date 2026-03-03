@@ -2,25 +2,37 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ResumeProvider, useResume } from './context/ResumeContext'
 import Layout from './components/Layout'
-import Landing from './pages/Landing'
-import Login from './pages/Login'
-import Signup from './pages/Signup'
-import Dashboard from './pages/Dashboard'
-import ResumeAnalyzer from './pages/ResumeAnalyzer'
-import ReadinessScore from './pages/ReadinessScore'
-import SkillGap from './pages/SkillGap'
-import ImprovementPlan from './pages/ImprovementPlan'
-import InterviewReadiness from './pages/InterviewReadiness'
-import ProgressTracking from './pages/ProgressTracking'
-import ResumeComparison from './pages/ResumeComparison'
-import IndustryAlignment from './pages/IndustryAlignment'
-import AdminDashboard from './pages/AdminDashboard'
-import Settings from './pages/Settings'
-import { initOnDevice } from './utils/onDevicePredictor'
-import { useEffect } from 'react'
+import ErrorBoundary from './components/ErrorBoundary'
+import React, { Suspense, lazy } from 'react'
+
+// ── Lazy-loaded pages (each becomes its own chunk) ──────────────
+const Landing = lazy(() => import('./pages/Landing'))
+const Login = lazy(() => import('./pages/Login'))
+const Signup = lazy(() => import('./pages/Signup'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const ResumeAnalyzer = lazy(() => import('./pages/ResumeAnalyzer'))
+const ReadinessScore = lazy(() => import('./pages/ReadinessScore'))
+const SkillGap = lazy(() => import('./pages/SkillGap'))
+const ImprovementPlan = lazy(() => import('./pages/ImprovementPlan'))
+const InterviewReadiness = lazy(() => import('./pages/InterviewReadiness'))
+const ProgressTracking = lazy(() => import('./pages/ProgressTracking'))
+const ResumeComparison = lazy(() => import('./pages/ResumeComparison'))
+const IndustryAlignment = lazy(() => import('./pages/IndustryAlignment'))
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
+const Settings = lazy(() => import('./pages/Settings'))
+
+/** Global page loading spinner for lazy chunks */
+function PageLoader() {
+    return (
+        <div className="page-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+            <div className="spinner" />
+        </div>
+    )
+}
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
-    const { user } = useAuth()
+    const { user, loading } = useAuth()
+    if (loading) return <div className="page-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}><div className="spinner" /></div>
     return user ? <>{children}</> : <Navigate to="/login" replace />
 }
 
@@ -37,9 +49,15 @@ function DashboardRedirect() {
     return <Dashboard />
 }
 
+/** Wrap a page component in its own error boundary so one page crash doesn't kill the app */
+function Safe({ children }: { children: React.ReactNode }) {
+    return <ErrorBoundary>{children}</ErrorBoundary>
+}
+
 function AppRoutes() {
     const { user } = useAuth()
     return (
+        <Suspense fallback={<PageLoader />}>
         <Routes>
             {/* Landing — always accessible */}
             <Route path="/" element={<Landing />} />
@@ -54,36 +72,35 @@ function AppRoutes() {
             </Route>
 
             <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-                <Route path="dashboard" element={<DashboardRedirect />} />
-                <Route path="resume-analyzer" element={<ResumeAnalyzer />} />
-                <Route path="readiness-score" element={<ReadinessScore />} />
-                <Route path="skill-gap" element={<SkillGap />} />
-                <Route path="improvement-plan" element={<ImprovementPlan />} />
-                <Route path="interview-readiness" element={<InterviewReadiness />} />
-                <Route path="progress-tracking" element={<ProgressTracking />} />
-                <Route path="resume-comparison" element={<ResumeComparison />} />
-                <Route path="industry-alignment" element={<IndustryAlignment />} />
-                <Route path="admin" element={<AdminDashboard />} />
-                <Route path="settings" element={<Settings />} />
+                <Route path="dashboard" element={<Safe><DashboardRedirect /></Safe>} />
+                <Route path="resume-analyzer" element={<Safe><ResumeAnalyzer /></Safe>} />
+                <Route path="readiness-score" element={<Safe><ReadinessScore /></Safe>} />
+                <Route path="skill-gap" element={<Safe><SkillGap /></Safe>} />
+                <Route path="improvement-plan" element={<Safe><ImprovementPlan /></Safe>} />
+                <Route path="interview-readiness" element={<Safe><InterviewReadiness /></Safe>} />
+                <Route path="progress-tracking" element={<Safe><ProgressTracking /></Safe>} />
+                <Route path="resume-comparison" element={<Safe><ResumeComparison /></Safe>} />
+                <Route path="industry-alignment" element={<Safe><IndustryAlignment /></Safe>} />
+                <Route path="admin" element={<Safe><AdminDashboard /></Safe>} />
+                <Route path="settings" element={<Safe><Settings /></Safe>} />
             </Route>
 
             <Route path="*" element={<Navigate to={user ? '/dashboard' : '/'} replace />} />
         </Routes>
+        </Suspense>
     )
 }
 
 export default function App() {
-    useEffect(() => {
-        initOnDevice().catch(e => console.error('ONNX init failed:', e))
-    }, [])
-
     return (
-        <AuthProvider>
-            <ResumeProvider>
-                <BrowserRouter>
-                    <AppRoutes />
-                </BrowserRouter>
-            </ResumeProvider>
-        </AuthProvider>
+        <ErrorBoundary>
+            <AuthProvider>
+                <ResumeProvider>
+                    <BrowserRouter>
+                        <AppRoutes />
+                    </BrowserRouter>
+                </ResumeProvider>
+            </AuthProvider>
+        </ErrorBoundary>
     )
 }

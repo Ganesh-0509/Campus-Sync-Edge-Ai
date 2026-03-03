@@ -54,7 +54,7 @@ export default function ResumeAnalyzer() {
                     )
                     setPrediction({
                         predicted_role: localResult.predictedRole || result.role,
-                        confidence: 0.95,
+                        confidence: localResult.score / 100,
                         resume_score: localResult.score,
                         weak_areas: result.missing_core_skills.slice(0, 3),
                         model_version: 'v2.0-onnx',
@@ -84,8 +84,8 @@ export default function ResumeAnalyzer() {
                 })
             }
             navigate('/readiness-score')
-        } catch (e: any) {
-            setError(e.message || 'Upload failed. Make sure the backend is running on :8000')
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : 'Upload failed. Make sure the backend is running on :8000')
         } finally { setLoading(false) }
     }
 

@@ -7,7 +7,7 @@ Startup sequence:
   3. Load v2 ML models (fatal if files missing)
   4. Accept requests
 
-Middleware: CORS (allow-all for hackathon/dev)
+Middleware: CORS (explicit origin allowlist)
 
 Routers:
   - analyze.py   → /upload, /roles
@@ -31,6 +31,8 @@ import os
 from app.routers import ml as ml_router
 from app.routers import inference as inference_router
 from app.routers import interview as interview_router
+from app.core.rate_limiter import limiter, rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 logging.basicConfig(
     level   = logging.INFO,
@@ -93,6 +95,10 @@ app = FastAPI(
     redoc_url   = "/redoc",
 )
 
+# ── Rate limiting ──────────────────────────────────────────────────────────────
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
 # ── CORS ───────────────────────────────────────────────────────────────────────
 # In production, replace "*" with your actual frontend origin(s).
 _ALLOWED_ORIGINS = [
@@ -109,6 +115,7 @@ app.add_middleware(
 )
 
 from app.routers import ai_insight
+from app.routers import feedback as feedback_router
 
 # ── App factory ────────────────────────────────────────────────────────────────
 # ... (rest of App factory)
@@ -118,9 +125,12 @@ app.include_router(ml_router.router)
 app.include_router(inference_router.router)
 app.include_router(interview_router.router)
 app.include_router(ai_insight.router)
+app.include_router(feedback_router.router)
 
 
 # ── Root ────────────────────────────────────────────────────────────────────────
+
+from app.core.cache import cache as _app_cache
 
 @app.get("/", tags=["Status"])
 def root():
@@ -128,9 +138,10 @@ def root():
     meta = get_metadata() if is_loaded() else {}
     return {
         "status":        "Resume Intelligence API Running",
-        "version":       "4.1.0",
+        "version":       "4.2.0",
         "model_version": meta.get("version", "not_loaded"),
         "model_accuracy": f"{meta.get('accuracy', 0)*100:.1f}%" if meta else "N/A",
         "database":      db["supabase"],
+        "cache_backend": _app_cache.backend,
         "docs":          "/docs",
     }

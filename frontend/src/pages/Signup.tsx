@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { isValidEmail, isValidPassword, isValidName, sanitizeText } from '../utils/sanitize'
 
 /** Different illustration for signup — growth/journey theme */
 function GrowthIllustration() {
@@ -140,16 +141,20 @@ export default function Signup() {
     const handle = async (e: FormEvent) => {
         e.preventDefault()
         if (!name || !email || !password) { setCharState('error'); setError('Please fill all required fields.'); return }
-        if (password.length < 6) { setCharState('error'); setError('Password must be at least 6 characters.'); return }
+        const nameCheck = isValidName(name)
+        if (!nameCheck.valid) { setCharState('error'); setError(nameCheck.message); return }
+        if (!isValidEmail(email)) { setCharState('error'); setError('Please enter a valid email address.'); return }
+        const pwCheck = isValidPassword(password)
+        if (!pwCheck.valid) { setCharState('error'); setError(pwCheck.message); return }
 
         setLoading(true); setError(''); setCharState('loading')
         try {
-            await signup(name, email, password)
+            await signup(sanitizeText(name.trim()), email.trim(), password)
             setCharState('success')
             setTimeout(() => navigate('/dashboard'), 1500)
-        } catch {
+        } catch (err: unknown) {
             setCharState('error')
-            setError('Signup failed. Please try again.')
+            setError(err instanceof Error ? err.message : 'Signup failed. Please try again.')
         } finally { setLoading(false) }
     }
 

@@ -24,18 +24,19 @@ function useWebSpeech() {
     const [transcript, setTranscript] = useState('')
     const [listening, setListening] = useState(false)
     const [supported, setSupported] = useState(true)
-    const recRef = useRef<any>(null)
+    const recRef = useRef<SpeechRecognition | null>(null)
 
     useEffect(() => {
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
         if (!SpeechRecognition) { setSupported(false); return }
 
         const rec = new SpeechRecognition()
         rec.continuous = true
         rec.interimResults = true
         rec.lang = 'en-US'
-        rec.onresult = (e: any) => {
-            const text = Array.from(e.results).map((r: any) => r[0].transcript).join(' ')
+        rec.onresult = (e: SpeechRecognitionEvent) => {
+            const results = e.results
+            const text = Array.from({ length: results.length }, (_, i) => results[i][0].transcript).join(' ')
             setTranscript(text)
         }
         rec.onend = () => setListening(false)
@@ -68,22 +69,21 @@ export default function InterviewReadiness() {
     const [result, setResult] = useState<EvalResult | null>(null)
     const [loading, setLoading] = useState(false)
     const [evalLoading, setEval] = useState(false)
+    const [fetchError, setFetchError] = useState<string | null>(null)
     const [phase, setPhase] = useState<'idle' | 'questioning' | 'done'>('idle')
 
     const { transcript, setTranscript, listening, supported, start, stop } = useWebSpeech()
 
     const fetchQuestion = async () => {
-        setLoading(true); setResult(null); setTranscript('')
+        setLoading(true); setResult(null); setTranscript(''); setFetchError(null)
         try {
             const res = await fetch(`${BASE}/interview/question?role=${encodeURIComponent(role)}`)
-            if (!res.ok) throw new Error()
+            if (!res.ok) throw new Error('Failed to fetch question from server')
             const q = await res.json()
             setQuestion(q)
             setPhase('questioning')
-        } catch {
-            // Fallback demo question
-            setQuestion({ id: 'sd_001', question: 'Explain how a HashMap works internally.', difficulty: 'Intermediate', role })
-            setPhase('questioning')
+        } catch (err: unknown) {
+            setFetchError(err instanceof Error ? err.message : 'Could not load interview question. Check your connection.')
         } finally { setLoading(false) }
     }
 
@@ -100,8 +100,8 @@ export default function InterviewReadiness() {
             const data = await res.json()
             setResult(data)
             setPhase('done')
-        } catch {
-            setResult({ score: 0, grade: 'Error', detected_concepts: [], missing_concepts: [], total_concepts: 0, feedback: 'Evaluation failed — check backend connection.', tip: '' })
+        } catch (err: unknown) {
+            setResult({ score: 0, grade: 'Error', detected_concepts: [], missing_concepts: [], total_concepts: 0, feedback: err instanceof Error ? err.message : 'Evaluation failed — check backend connection.', tip: 'Please try again or check your internet connection.' })
             setPhase('done')
         } finally { setEval(false) }
     }
@@ -187,6 +187,11 @@ export default function InterviewReadiness() {
                         <button className="btn btn--primary" onClick={fetchQuestion} disabled={loading}>
                             {loading ? '⏳ Loading...' : <><ChevronRight size={14} /> Start Interview Question</>}
                         </button>
+                        {fetchError && (
+                            <div style={{ marginTop: 16, padding: '12px 16px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: 13, color: 'var(--red)' }}>
+                                {fetchError}
+                            </div>
+                        )}
                     </div>
                 )}
 

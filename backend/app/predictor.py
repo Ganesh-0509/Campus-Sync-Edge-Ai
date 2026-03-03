@@ -20,7 +20,7 @@ import logging
 
 import numpy as np
 
-from app.model_loader import get_role_model, get_score_model, get_vocabulary, get_metadata
+from app.model_loader import get_role_model, get_score_model, get_vocabulary, get_metadata, get_vocab_index
 from app.inference_utils import clamp
 
 log = logging.getLogger("predictor")
@@ -55,9 +55,9 @@ def transform_input(input_data, vocabulary: list[str]) -> np.ndarray:
       [binary_skill_0, …, binary_skill_N,
        core_cov/100, opt_cov/100, proj/100, ats/100, struct/100]
     """
-    # Binary skill vector
+    # Binary skill vector — use pre-built index (O(1) per skill instead of rebuilding dict)
     skill_set   = set(s.lower().strip() for s in input_data.skills)
-    vocab_index = {v: i for i, v in enumerate(vocabulary)}
+    vocab_index = get_vocab_index()
 
     skill_vec = [0] * len(vocabulary)
     for skill in skill_set:

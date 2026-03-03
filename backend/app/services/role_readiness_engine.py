@@ -12,6 +12,7 @@ from app.services.scoring_engine import (
     calculate_structure_score,
     apply_locked_formula,
     get_readiness_category,
+    weighted_coverage,
 )
 from app.services.skill_gap_engine import generate_skill_gap_analysis
 
@@ -51,8 +52,9 @@ def calculate_role_readiness(
     matched_core     = [s for s in core_skills     if s in resume_set]
     matched_optional = [s for s in optional_skills if s in resume_set]
 
-    core_coverage     = len(matched_core)     / len(core_skills)     if core_skills     else 0.0
-    optional_coverage = len(matched_optional) / len(optional_skills) if optional_skills else 0.0
+    # Weighted coverage: high-importance skills (DSA, system design) count 1.5×
+    core_coverage     = weighted_coverage(matched_core, core_skills)
+    optional_coverage = weighted_coverage(matched_optional, optional_skills)
 
     # ── Sub-scores ───────────────────────────────────────────────────────────
     project_data   = calculate_project_score(raw_text)

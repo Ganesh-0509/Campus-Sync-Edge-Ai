@@ -1,10 +1,17 @@
 import os
 import json
 import logging
+import time
 import google.generativeai as genai
 from typing import Optional, Dict, Any
 
+from app.utils.llm_utils import parse_json_from_llm
+from app.core.cache import cache as _cache
+
 log = logging.getLogger("ai_service")
+
+_FORECAST_TTL = 3600  # 1 hour
+
 
 class GeminiService:
     def __init__(self):
@@ -15,10 +22,21 @@ class GeminiService:
         else:
             self.model = None
 
+    def _cache_key(self, role: str, missing_skills: list) -> str:
+        return f"forecast:{role}|{'|'.join(sorted(s.lower() for s in missing_skills[:3]))}"
+
     async def get_market_forecast(self, role: str, missing_skills: list) -> Dict[str, Any]:
         """
         Uses Google Gemini to generate a dynamic market forecast.
+        Results cached for 1 hour per (role, top_skills) combo.
         """
+        cache_key = self._cache_key(role, missing_skills)
+
+        # Check cache (Redis or in-memory)
+        cached_data = _cache.get(cache_key)
+        if cached_data is not None:
+            return cached_data
+
         if not self.api_key or not self.model:
             log.warning("No GEMINI_API_KEY found, returning fallback.")
             return self._get_fallback(role, missing_skills)
@@ -48,17 +66,14 @@ class GeminiService:
             response = self.model.generate_content(prompt)
             text = response.text
             
-            # Simple JSON extraction
-            if "```json" in text:
-                text = text.split("```json")[1].split("```")[0].strip()
-            elif "```" in text:
-                text = text.split("```")[1].split("```")[0].strip()
-                
-            data = json.loads(text)
+            data = parse_json_from_llm(text)
+            if data is None:
+                raise ValueError("Failed to parse JSON from Gemini response")
             # Add a timestamp to prove it's live
             from datetime import datetime
             data["trend_title"] = f"LIVE: {data.get('trend_title')} ({datetime.now().strftime('%H:%M:%S')})"
             data["is_fallback"] = False
+            _cache.set(cache_key, data, ttl=_FORECAST_TTL)
             return data
                 
         except Exception as e:

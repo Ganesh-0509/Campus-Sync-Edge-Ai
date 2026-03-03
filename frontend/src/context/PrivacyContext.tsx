@@ -2,6 +2,10 @@ import { createContext, useContext } from 'react'
 
 interface PrivacyCtx { privacy: boolean; setPrivacy: (v: boolean) => void }
 
-export const PrivacyContext = createContext<PrivacyCtx>({ privacy: false, setPrivacy: () => { } })
+export const PrivacyContext = createContext<PrivacyCtx | null>(null)
 
-export function usePrivacy() { return useContext(PrivacyContext) }
+export function usePrivacy() {
+    const ctx = useContext(PrivacyContext)
+    if (!ctx) throw new Error('usePrivacy must be used inside a PrivacyProvider')
+    return ctx
+}

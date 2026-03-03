@@ -6,6 +6,29 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['onnxruntime-web'],
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
+  },
+  build: {
+    target: 'es2022',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Core React (cached long-term, rarely changes)
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          // Auth (medium-size, loaded early)
+          supabase: ['@supabase/supabase-js'],
+          // Markdown rendering (large, only used in StudyHub)
+          markdown: ['react-markdown', 'remark-gfm'],
+          // Icons (tree-shakeable but still significant)
+          icons: ['lucide-react'],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {

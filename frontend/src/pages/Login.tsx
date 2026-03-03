@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { isValidEmail, isValidPassword } from '../utils/sanitize'
 
 type CharState = 'idle' | 'looking' | 'hiding' | 'happy' | 'error'
 
@@ -79,7 +80,7 @@ function AnimatedCharacter({ state }: { state: CharState }) {
 
             {/* ── LEFT ARM — pivot from TOP-RIGHT corner (= shoulder) ── */}
             <g style={{
-                transformBox: 'fill-box' as any,
+                transformBox: 'fill-box' as React.CSSProperties['transformBox'],
                 transformOrigin: 'right top',
                 transform: `rotate(${-armDeg}deg)`,
                 transition: armTransition,
@@ -94,7 +95,7 @@ function AnimatedCharacter({ state }: { state: CharState }) {
 
             {/* ── RIGHT ARM — pivot from TOP-LEFT corner (= shoulder) ── */}
             <g style={{
-                transformBox: 'fill-box' as any,
+                transformBox: 'fill-box' as React.CSSProperties['transformBox'],
                 transformOrigin: 'left top',
                 transform: `rotate(${armDeg}deg)`,
                 transition: armTransition,
@@ -244,18 +245,29 @@ export default function Login() {
             setChar('error')
             return
         }
+        if (!isValidEmail(email)) {
+            setError('Please enter a valid email address.')
+            setChar('error')
+            return
+        }
+        const pwCheck = isValidPassword(password)
+        if (!pwCheck.valid) {
+            setError(pwCheck.message)
+            setChar('error')
+            return
+        }
         setLoading(true)
         setError('')
         setChar('looking')
 
         try {
-            await login(email, password)
+            await login(email.trim(), password)
             setChar('happy')
             // Wait for the sparkles and big smile before moving on!
             setTimeout(() => navigate('/dashboard'), 2200)
-        } catch {
+        } catch (err: unknown) {
             setChar('error')
-            setError('Invalid credentials. Try the Google demo button below.')
+            setError(err instanceof Error ? err.message : 'Invalid credentials. Please try again.')
         } finally {
             setLoading(false)
         }

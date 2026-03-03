@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense, lazy } from 'react'
 import { X, BookOpen, CheckCircle2, ChevronRight, BrainCircuit, Lightbulb, Clock, MessageSquare, Send, Sparkles, Pin, Sun, Moon } from 'lucide-react'
 import { getStudyNotes, getStudyQuiz, studyChat, submitContribution, type StudyNotesResult, type QuizResult } from '../api/client'
-import ReactMarkdown from 'react-markdown'
+const ReactMarkdown = lazy(() => import('react-markdown'))
 import remarkGfm from 'remark-gfm'
 import { useResume } from '../context/ResumeContext'
 import { useAuth } from '../context/AuthContext'
@@ -252,7 +252,7 @@ export default function StudyHub({ skill, onClose, onVerified }: StudyHubProps) 
                                             <Sparkles size={16} /> Hierarchical Mastery Path
                                         </div>
                                         <div className="path-items">
-                                            {notes.sub_roadmap?.map((step: any, idx: number) => (
+                                            {notes.sub_roadmap?.map((step: { title: string; duration: string }, idx: number) => (
                                                 <div key={idx} className="path-node">
                                                     <div className="node-marker">{idx + 1}</div>
                                                     <div className="node-info">
@@ -340,9 +340,11 @@ export default function StudyHub({ skill, onClose, onVerified }: StudyHubProps) 
                                         <div key={i} className={`msg msg--${m.role}`}>
                                             <div className="msg-content">
                                                 {m.role === 'assistant' ? (
-                                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                                        {m.content}
-                                                    </ReactMarkdown>
+                                                    <Suspense fallback={<span>Loading...</span>}>
+                                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                            {m.content}
+                                                        </ReactMarkdown>
+                                                    </Suspense>
                                                 ) : m.content}
                                             </div>
                                         </div>

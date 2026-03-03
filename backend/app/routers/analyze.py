@@ -6,23 +6,30 @@ If Supabase is not configured the scoring result is still returned — a
 db_warning field is added to the response instead of raising a 500.
 """
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends, Request
 from app.services.resume_parser import parse_resume
 from app.services.skill_dictionary import extract_skills
 from app.services.role_readiness_engine import calculate_role_readiness
 from app.services.role_matrix import VALID_ROLES
 from app.core.supabase_client import get_supabase
 from app.services.encryption_service import encrypt_text, is_encryption_enabled
+from app.core.auth import optional_user, AuthUser
+from app.utils.validation import validate_email, validate_resume_text
+from app.core.rate_limiter import upload_limit
+from typing import Optional
 
 router = APIRouter()
 
 
 @router.post("/upload")
+@upload_limit
 async def upload_resume(
+    request: Request,
     file: UploadFile = File(...),
     role: str = Form(...),
     privacy_mode: bool = Form(False),
     user_email: str = Form(None),
+    auth_user: Optional[AuthUser] = Depends(optional_user),
 ):
     """
     Upload a PDF or DOCX resume with a target role and receive a full
@@ -37,11 +44,24 @@ async def upload_resume(
             detail=f"Invalid role '{role}'. Choose from: {VALID_ROLES}",
         )
 
+    # Prefer authenticated user's email, fall back to form field
+    effective_email = validate_email((auth_user.email if auth_user else None) or user_email)
+
     try:
         file_bytes = await file.read()
 
+        # Guard against oversized uploads (max 5MB)
+        if len(file_bytes) > 5_000_000:
+            raise HTTPException(status_code=413, detail="File too large. Maximum size is 5MB.")
+
         # ── Core deterministic pipeline ──────────────────────────────────────
         parsed  = parse_resume(file_bytes, file.filename)
+
+        # Validate extracted text
+        text_ok, text_msg = validate_resume_text(parsed["raw_text"])
+        if not text_ok:
+            raise HTTPException(status_code=400, detail=text_msg)
+
         skills  = extract_skills(parsed["raw_text"])
         result  = calculate_role_readiness(
             resume_skills     = skills,
@@ -67,9 +87,7 @@ async def upload_resume(
             try:
                 sb = get_supabase()
 
-                # Check for existing resume with same filename + user (deduplication)
-                existing = sb.table("resumes").select("id").eq("filename", file.filename).eq("user_email", user_email).execute()
-                
+                # Upsert resume (single query instead of select+insert/update)
                 resume_data = {
                     "filename":          file.filename,
                     "raw_text":          encrypt_text(parsed["raw_text"]),
@@ -77,17 +95,17 @@ async def upload_resume(
                     "sections_detected": parsed["sections_detected"],
                     "links":             parsed["links"],
                     "encrypted":         is_encryption_enabled(),
-                    "user_email":        user_email,
+                    "user_email":        effective_email,
                 }
 
-                if existing.data:
-                    resume_id = existing.data[0]["id"]
-                    sb.table("resumes").update(resume_data).eq("id", resume_id).execute()
-                else:
-                    resume_resp = sb.table("resumes").insert(resume_data).execute()
-                    resume_id = resume_resp.data[0]["id"]
+                resume_resp = (
+                    sb.table("resumes")
+                    .upsert(resume_data, on_conflict="filename,user_email")
+                    .execute()
+                )
+                resume_id = resume_resp.data[0]["id"]
 
-                # Always maintain exactly ONE analysis row per resume (overwrite any previous role)
+                # Upsert analysis (single query instead of select+insert/update)
                 analysis_data = {
                     "resume_id":                 resume_id,
                     "role":                      result["role"],
@@ -103,14 +121,12 @@ async def upload_resume(
                     "recommendations":           result["recommendations"],
                 }
 
-                existing_analysis = sb.table("role_analyses").select("id").eq("resume_id", resume_id).execute()
-                
-                if existing_analysis.data:
-                    analysis_id = existing_analysis.data[0]["id"]
-                    sb.table("role_analyses").update(analysis_data).eq("id", analysis_id).execute()
-                else:
-                    analysis_resp = sb.table("role_analyses").insert(analysis_data).execute()
-                    analysis_id = analysis_resp.data[0]["id"]
+                analysis_resp = (
+                    sb.table("role_analyses")
+                    .upsert(analysis_data, on_conflict="resume_id")
+                    .execute()
+                )
+                analysis_id = analysis_resp.data[0]["id"]
 
             except EnvironmentError as e:
                 db_warning = f"Supabase not configured — result not saved. {e}"

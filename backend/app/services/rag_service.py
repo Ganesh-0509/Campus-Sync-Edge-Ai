@@ -19,6 +19,8 @@ import logging
 import hashlib
 from typing import List, Dict, Any, Optional
 
+from app.utils.llm_utils import extract_content, parse_json_from_llm
+
 log = logging.getLogger("rag_service")
 
 # ── Optional Redis ────────────────────────────────────────────────────────────
@@ -133,14 +135,7 @@ Return ONLY ONE of these exact strings: valid | minor_inconsistency | major_cont
 """
     try:
         res = model.run([{"role": "user", "content": judge_prompt}])
-        content = ""
-        if isinstance(res, dict):
-            content = res.get("output", {}).get("content", "") if isinstance(res.get("output"), dict) else str(res.get("output", ""))
-        elif hasattr(res, "output"):
-            content = res.output.get("content", "") if isinstance(res.output, dict) else str(res.output)
-        else:
-            content = str(res)
-        content = content.strip().lower()
+        content = extract_content(res).strip().lower()
         if "major" in content:
             return "major_contradiction"
         if "minor" in content:
@@ -225,20 +220,8 @@ Produce at least 5-7 detailed_content sections covering:
     if model:
         try:
             res = model.run([{"role": "user", "content": prompt}])
-            content = ""
-            if isinstance(res, dict):
-                content = res.get("output", {}).get("content", "") if isinstance(res.get("output"), dict) else str(res.get("output", ""))
-            elif hasattr(res, "output"):
-                content = res.output.get("content", "") if isinstance(res.output, dict) else str(res.output)
-            else:
-                content = str(res)
-
-            if "```json" in content:
-                content = content.split("```json")[1].split("```")[0].strip()
-            elif "```" in content:
-                content = content.split("```")[1].split("```")[0].strip()
-
-            result = json.loads(content)
+            content = extract_content(res)
+            result = parse_json_from_llm(content)
         except Exception as e:
             log.error("RAG LLM generation failed: %s", e)
 
@@ -255,17 +238,10 @@ Produce at least 5-7 detailed_content sections covering:
             log.warning("Judge detected major contradiction for [%s] — regenerating...", skill)
             try:
                 res2 = model.run([{"role": "user", "content": prompt}])
-                content2 = ""
-                if isinstance(res2, dict):
-                    content2 = res2.get("output", {}).get("content", "") if isinstance(res2.get("output"), dict) else str(res2.get("output", ""))
-                elif hasattr(res2, "output"):
-                    content2 = res2.output.get("content", "") if isinstance(res2.output, dict) else str(res2.output)
-                else:
-                    content2 = str(res2)
-
-                if "```json" in content2:
-                    content2 = content2.split("```json")[1].split("```")[0].strip()
-                result = json.loads(content2)
+                content2 = extract_content(res2)
+                parsed2 = parse_json_from_llm(content2)
+                if parsed2:
+                    result = parsed2
                 result["_judge_verdict"] = "regenerated"
             except Exception as e:
                 log.error("Regeneration failed: %s", e)
