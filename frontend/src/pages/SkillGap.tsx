@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useResume } from '../context/ResumeContext'
 import { BarChart2 } from 'lucide-react'
 import SkillGraphViz from '../components/SkillGraphViz'
-
-const BASE = 'http://localhost:8000'
+import { BASE } from '../api/client'
 
 export default function SkillGap() {
     const navigate = useNavigate()
@@ -102,7 +101,7 @@ export default function SkillGap() {
                                     <BarChart2 size={14} color="var(--blue)" style={{ flexShrink: 0 }} />
                                     <span className="gap-row__name">{g.skill}</span>
                                     <div className="gap-row__actions">
-                                        <span className={`badge badge--${g.priority.toLowerCase() === 'critical' ? 'high' : g.priority.toLowerCase()}`}>{g.priority}</span>
+                                        <span className={`badge ${g.priority === 'Critical' ? 'badge--high' : g.priority === 'High' ? 'badge--medium' : 'badge--blue'}`}>{g.priority}</span>
                                         <button className="btn btn--primary btn--sm" onClick={() => handleAction(g.skill)}>{g.action} →</button>
                                     </div>
                                 </div>

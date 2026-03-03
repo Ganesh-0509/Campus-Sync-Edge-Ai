@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { uploadResume, predictResume } from '../api/client'
 import CircularProgress from '../components/CircularProgress'
 import { Cpu, Cloud, Zap, ArrowRight, TrendingUp, AlertCircle, Shield } from 'lucide-react'
-import { usePrivacy } from '../components/Layout'
+import { usePrivacy } from '../context/PrivacyContext'
 import { predictOnDevice, isOnDeviceReady } from '../utils/onDevicePredictor'
 
 const CLASSES = [
@@ -20,15 +20,15 @@ export default function ReadinessScore() {
     const { user } = useAuth()
     const [switching, setSwitching] = useState(false)
 
-    const score = analysis?.final_score ?? 72
+    const score = analysis?.final_score ?? 0
     const current = getReadinessClass(score)
 
 
-    const corePct = analysis?.core_coverage_percent ?? 68
-    const projectPct = analysis?.project_score_percent ?? 55
-    const atsPct = analysis?.ats_score_percent ?? 80
-    const structPct = analysis?.structure_score_percent ?? 90
-    const optPct = analysis?.optional_coverage_percent ?? 40
+    const corePct = analysis?.core_coverage_percent ?? 0
+    const projectPct = analysis?.project_score_percent ?? 0
+    const atsPct = analysis?.ats_score_percent ?? 0
+    const structPct = analysis?.structure_score_percent ?? 0
+    const optPct = analysis?.optional_coverage_percent ?? 0
 
     const BREAKDOWN = [
         { label: 'Core Skill Coverage', pct: corePct, weight: 35, cls: 'blue' },
@@ -65,7 +65,9 @@ export default function ReadinessScore() {
                             }}>
                                 {prediction.model_version.includes('onnx') ? <Shield size={12} /> : <Cloud size={12} />}
                                 {prediction.model_version.includes('onnx') ? 'Verified AI Engine' : 'Cloud Intelligence'}
-                                <span style={{ opacity: 0.6, fontWeight: 400 }}>• Latency {prediction.inference_time_ms}ms</span>
+                                {prediction.inference_time_ms != null && prediction.inference_time_ms > 0 && (
+                                    <span style={{ opacity: 0.6, fontWeight: 400 }}>• Latency {prediction.inference_time_ms.toFixed(1)}ms</span>
+                                )}
                             </div>
 
                             <div style={{

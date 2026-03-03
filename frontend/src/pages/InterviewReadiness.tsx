@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useResume } from '../context/ResumeContext'
 import { Mic, MicOff, RefreshCw, ChevronRight } from 'lucide-react'
-
-const BASE = 'http://localhost:8000'
+import { BASE } from '../api/client'
 
 interface Question {
     id: string
@@ -59,6 +59,7 @@ function useWebSpeech() {
 }
 
 export default function InterviewReadiness() {
+    const navigate = useNavigate()
     const { analysis, prediction } = useResume()
     const role = analysis?.role ?? prediction?.predicted_role ?? 'Software Developer'
     const readiness = analysis?.final_score ?? 55
@@ -118,7 +119,7 @@ export default function InterviewReadiness() {
                     <div style={{ fontSize: 60, marginBottom: 20 }}>🎙️</div>
                     <h1 className="page-title">Mock Interview Locked</h1>
                     <p className="page-subtitle">We need your resume analysis to generate role-specific interview questions just for you.</p>
-                    <button className="btn btn--primary" onClick={() => (window.location.href = '/resume-analyzer')} style={{ marginTop: 24 }}>
+                    <button className="btn btn--primary" onClick={() => navigate('/resume-analyzer')} style={{ marginTop: 24 }}>
                         Analyze Your Resume Now
                     </button>
                     <div style={{ marginTop: 40, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
@@ -212,6 +213,7 @@ export default function InterviewReadiness() {
                                     <button
                                         className={`btn ${listening ? 'btn--danger' : 'btn--primary'}`}
                                         onClick={listening ? stop : start}
+                                        aria-label={listening ? 'Stop recording' : 'Start recording'}
                                     >
                                         {listening ? <><MicOff size={14} /> Stop Recording</> : <><Mic size={14} /> Start Recording</>}
                                     </button>

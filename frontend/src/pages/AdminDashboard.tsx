@@ -13,15 +13,6 @@ import {
 import { Trash2 } from 'lucide-react'
 import type { AdminStats, Contribution, AdminStudent } from '../api/client'
 
-// Robust Mock Data for Students
-const MOCK_STUDENTS = [
-    { id: 1, name: 'Adithya K', role: 'Fullstack Dev', score: 88, status: 'Ready', skills: ['React', 'Node', 'AWS'] },
-    { id: 2, name: 'Megha S', role: 'Data Scientist', score: 92, status: 'Top Talent', skills: ['Python', 'Pandas', 'ML'] },
-    { id: 3, name: 'Sanjiv R', role: 'Backend Dev', score: 74, status: 'Preparing', skills: ['Go', 'SQL', 'Docker'] },
-    { id: 4, name: 'Priya M', role: 'Frontend Dev', score: 81, status: 'Ready', skills: ['Vue', 'CSS', 'Figma'] },
-    { id: 5, name: 'Varun T', role: 'DevOps Engineer', score: 68, status: 'Learning', skills: ['Linux', 'CI/CD'] },
-]
-
 export default function AdminDashboard() {
     const [stats, setStats] = useState<AdminStats | null>(null)
     const [contributions, setContributions] = useState<Contribution[]>([])
@@ -251,14 +242,13 @@ export default function AdminDashboard() {
                             <h2 style={{ margin: 0, fontSize: 18, color: '#e6edf3' }}>Vector Engine Console</h2>
                         </div>
                         <div style={{ padding: 20, background: '#161b22', borderRadius: 8, fontFamily: 'monospace', fontSize: 12, height: 400, overflowY: 'auto', border: '1px solid #30363d' }}>
-                            <div style={{ color: '#7d8590' }}>[CSE OS v1.0.4 - Command Shell]</div>
-                            <div style={{ color: '#3fb950', marginTop: 8 }}>{'>'} Vector Memory: 128,402 embeddings loaded.</div>
-                            <div style={{ color: '#388bfd' }}>{'>'} Semantic Search: ONLINE</div>
-                            <div style={{ color: '#7d8590', marginTop: 12 }}>[Log 21:00:04] Inference started (Role Classification)</div>
-                            <div style={{ color: '#7d8590' }}>[Log 21:00:04] ONNX Model (v2.1) loaded into memory segment B0</div>
-                            <div style={{ color: '#3fb950' }}>[Log 21:00:05] Latency check: 142ms (Performance standard met)</div>
-                            <div style={{ color: '#f85149', marginTop: 12 }}>[Warn] Cluster 04 utilization reaching 84%</div>
-                            <div style={{ color: '#7d8590', marginTop: 12 }}>[Log 21:00:10] Cache cleared - freed 1.4GB</div>
+                            <div style={{ color: '#7d8590' }}>[CampusSync Edge — System Console]</div>
+                            <div style={{ color: '#3fb950', marginTop: 8 }}>{'>'} Status: {stats ? 'Connected' : 'Checking...'}</div>
+                            <div style={{ color: '#388bfd' }}>{'>'} Pending Reviews: {stats?.pending_reviews ?? '...'}</div>
+                            <div style={{ color: '#388bfd' }}>{'>'} Approved Content: {stats?.approved_contributions ?? '...'}</div>
+                            <div style={{ color: '#7d8590', marginTop: 12 }}>{'>'} Active Students: {stats?.active_students ?? '...'}</div>
+                            <div style={{ color: '#7d8590' }}>{'>'} Cached Courses: {stats?.total_courses_cached ?? '...'}</div>
+                            <div style={{ color: '#7d8590', marginTop: 12 }}>{'>'} Analyses in DB: {students.length}</div>
                             <div className="pulse" style={{ color: '#e6edf3', display: 'flex', gap: 4, marginTop: 20 }}>
                                 <span>_</span>
                             </div>
@@ -273,12 +263,12 @@ export default function AdminDashboard() {
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                                 <div style={{ padding: 16, background: 'rgba(0,0,0,0.2)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                                    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>Uptime</div>
-                                    <div style={{ fontSize: 18, fontWeight: 800 }}>142 Days</div>
+                                    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>Students</div>
+                                    <div style={{ fontSize: 18, fontWeight: 800 }}>{stats?.active_students ?? '--'}</div>
                                 </div>
                                 <div style={{ padding: 16, background: 'rgba(34, 197, 94, 0.05)', borderRadius: 10, border: '1px solid rgba(34, 197, 94, 0.2)' }}>
-                                    <div style={{ fontSize: 10, color: 'var(--green)', marginBottom: 4 }}>Accuracy</div>
-                                    <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--green)' }}>98.2%</div>
+                                    <div style={{ fontSize: 10, color: 'var(--green)', marginBottom: 4 }}>Courses Cached</div>
+                                    <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--green)' }}>{stats?.total_courses_cached ?? '--'}</div>
                                 </div>
                             </div>
                         </div>

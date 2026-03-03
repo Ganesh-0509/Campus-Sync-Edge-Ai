@@ -20,8 +20,11 @@ export default function MiniLineChart({ data, height = 120, color = '#3b82f6' }:
     const innerW = W - PAD.left - PAD.right
     const innerH = H - PAD.top - PAD.bottom
 
-    const xOf = (i: number) => PAD.left + (i / (data.length - 1)) * innerW
-    const yOf = (v: number) => PAD.top + (1 - (v - minV) / (maxV - minV)) * innerH
+    const xOf = (i: number) => PAD.left + (data.length > 1 ? (i / (data.length - 1)) * innerW : innerW / 2)
+    const yOf = (v: number) => {
+        const range = maxV - minV
+        return PAD.top + (range === 0 ? innerH / 2 : (1 - (v - minV) / range) * innerH)
+    }
 
     const pts = data.map((d, i) => `${xOf(i).toFixed(1)},${yOf(d.value).toFixed(1)}`)
 

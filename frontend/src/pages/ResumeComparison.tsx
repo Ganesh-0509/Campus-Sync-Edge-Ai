@@ -1,16 +1,18 @@
+import { useNavigate } from 'react-router-dom'
 import { useResume } from '../context/ResumeContext'
 import { TrendingUp } from 'lucide-react'
 
 export default function ResumeComparison() {
+    const navigate = useNavigate()
     const { analysis, previousAnalysis } = useResume()
 
     const curr = analysis
     const prev = previousAnalysis
 
-    const currScore = curr?.final_score ?? 72
-    const prevScore = prev?.final_score ?? 58
-    const currSkills = curr?.detected_skills ?? ['Python', 'Java', 'SQL', 'HTML/CSS', 'Git', 'React', 'Node.js', 'Docker']
-    const prevSkills = prev?.detected_skills ?? ['Python', 'Java', 'SQL', 'HTML/CSS', 'Git']
+    const currScore = curr?.final_score ?? 0
+    const prevScore = prev?.final_score ?? 0
+    const currSkills = curr?.detected_skills ?? []
+    const prevSkills = prev?.detected_skills ?? []
 
     const prevSet = new Set(prevSkills.map(s => s.toLowerCase()))
     const currSet = new Set(currSkills.map(s => s.toLowerCase()))
@@ -28,7 +30,7 @@ export default function ResumeComparison() {
                     <div style={{ fontSize: 60, marginBottom: 20 }}>🆚</div>
                     <h1 className="page-title">Version Comparison Locked</h1>
                     <p className="page-subtitle">To see side-by-side improvements, you need to upload at least two versions of your resume.</p>
-                    <button className="btn btn--primary" onClick={() => (window.location.href = '/resume-analyzer')} style={{ marginTop: 24 }}>
+                    <button className="btn btn--primary" onClick={() => navigate('/resume-analyzer')} style={{ marginTop: 24 }}>
                         Upload Second Version
                     </button>
                     <div className="card" style={{ marginTop: 40, padding: '24px 32px', textAlign: 'left', background: 'rgba(59,130,246,0.03)' }}>
@@ -92,7 +94,7 @@ export default function ResumeComparison() {
             <div className="card">
                 <div className="card-title mb-12">Score Difference</div>
                 <div className="flex items-center gap-12">
-                    <TrendingUp size={20} color="var(--green)" />
+                    <TrendingUp size={20} color={diff >= 0 ? 'var(--green)' : 'var(--red)'} style={diff < 0 ? { transform: 'scaleY(-1)' } : undefined} />
                     <div>
                         <div className={`diff-positive`} style={{ color: diff >= 0 ? 'var(--green)' : 'var(--red)' }}>
                             {diff >= 0 ? `+${diff}%` : `${diff}%`} improvement from previous version

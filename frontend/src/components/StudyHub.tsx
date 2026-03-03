@@ -126,7 +126,7 @@ export default function StudyHub({ skill, onClose, onVerified }: StudyHubProps) 
     }
 
     if (loading) return (
-        <div className="study-modal">
+        <div className="study-modal" role="dialog" aria-label="Loading study materials">
             <div className="study-content study-content--loading">
                 <div className="spinner study-spinner"></div>
                 <h2>Gathering Learning Materials...</h2>
@@ -136,7 +136,7 @@ export default function StudyHub({ skill, onClose, onVerified }: StudyHubProps) 
     )
 
     return (
-        <div className={`study-modal ${theme}-hub`}>
+        <div className={`study-modal ${theme}-hub`} role="dialog" aria-label={`Study Hub: ${skill}`}>
             <div className="study-workspace">
                 {/* ── Focus Sidebar ── */}
                 <aside className="workspace-sidebar">
@@ -146,6 +146,7 @@ export default function StudyHub({ skill, onClose, onVerified }: StudyHubProps) 
                         <button
                             className="theme-toggle-btn"
                             onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+                            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
                         >
                             {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
                         </button>

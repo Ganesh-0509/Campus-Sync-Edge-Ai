@@ -12,6 +12,9 @@ sklearn arrays are built in train.py.
 """
 
 from __future__ import annotations
+import logging
+
+logger = logging.getLogger(__name__)
 
 _NUMERIC_FIELDS = [
     "core_coverage_percent",
@@ -98,10 +101,9 @@ def engineer_features(
     vocab = build_vocabulary(records)
     X, y_role, y_score, weights = build_feature_matrix(records, vocab)
 
-    print(
-        f"🔧  Features engineered — "
+    logger.info(
+        f"Features engineered — "
         f"{len(records)} records × {len(vocab) + len(_NUMERIC_FIELDS)} features "
-        f"({len(vocab)} skills + {len(_NUMERIC_FIELDS)} numeric)",
-        flush=True,
+        f"({len(vocab)} skills + {len(_NUMERIC_FIELDS)} numeric)"
     )
     return X, y_role, y_score, weights, vocab

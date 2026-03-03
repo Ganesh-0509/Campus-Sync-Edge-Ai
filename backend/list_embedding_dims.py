@@ -14,5 +14,5 @@ for m in genai.list_models():
             res = genai.embed_content(model=m.name, content="test", task_type="retrieval_query")
             dim = len(res['embedding'])
             print(f"Model: {m.name} | Dimension: {dim}")
-        except:
+        except Exception:
             print(f"Model: {m.name} | Could not embed")

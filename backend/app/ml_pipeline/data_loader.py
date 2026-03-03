@@ -8,6 +8,9 @@ Original load_dataset() is preserved for Phase 4A similarity engine.
 """
 
 from app.core.supabase_client import get_supabase
+import logging
+
+logger = logging.getLogger(__name__)
 
 # ── Sample weights ─────────────────────────────────────────────────────────────
 WEIGHT_REAL      = 1.5
@@ -149,12 +152,11 @@ def load_combined_dataset() -> list[dict]:
 
         combined = real_records + synthetic_records
 
-        print(
-            f"📊  Dataset loaded — "
+        logger.info(
+            f"Dataset loaded — "
             f"{len(real_records)} real (×{WEIGHT_REAL}) + "
             f"{len(synthetic_records)} synthetic (×{WEIGHT_SYNTHETIC}) "
-            f"= {len(combined)} total",
-            flush=True,
+            f"= {len(combined)} total"
         )
         return combined
 
@@ -229,12 +231,11 @@ def load_combined_dataset_v2() -> list[dict]:
 
         combined = real_records + synthetic_records
 
-        print(
+        logger.info(
             f"Dataset v2 loaded — "
             f"{real_count} real (x{WEIGHT_REAL}) + "
             f"{len(synthetic_records)} synthetic_v2 (x{WEIGHT_SYNTHETIC}) "
-            f"= {len(combined)} total",
-            flush=True,
+            f"= {len(combined)} total"
         )
         return combined
 

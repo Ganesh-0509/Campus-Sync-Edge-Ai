@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { getMarketForecast, type ForecastResult } from '../api/client'
 import { useResume } from '../context/ResumeContext'
@@ -53,15 +53,16 @@ function buildAdaptivePlan(
         })
     })
 
-    // Level 3: Optional/Medium (1h each)
+    // Level 3: Optional Skills (Mapped based on importance/index)
     missingOptional.slice(0, 4).forEach((s, i) => {
+        const priority = i < 2 ? 'High' : 'Medium'
         items.push({
-            id: `med-${i}`,
+            id: `opt-${i}`,
             title: `Explore ${s}`,
             skill: s,
-            priority: 'Medium',
-            level: 3,
-            durationMinutes: 60,
+            priority: priority,
+            level: i < 2 ? 2 : 3,
+            durationMinutes: i < 2 ? 90 : 60,
             resources: [],
             subtasks: [`Basic syntax and use cases of ${s}`, `Compare ${s} with alternatives`]
         })
@@ -77,10 +78,10 @@ export default function ImprovementPlan() {
     const highlightSkill = (location.state as any)?.highlightSkill
 
     const role = analysis?.role ?? 'Software Developer'
-    const missingCore = analysis?.missing_core_skills ?? ['System Design', 'Docker', 'DSA']
-    const missingOpt = analysis?.missing_optional_skills ?? ['React', 'AWS']
+    const missingCore = analysis?.missing_core_skills ?? []
+    const missingOpt = analysis?.missing_optional_skills ?? []
 
-    const [plan] = useState(() => buildAdaptivePlan(missingCore, missingOpt))
+    const plan = useMemo(() => buildAdaptivePlan(missingCore, missingOpt), [analysis])
     const [activeStudy, setActiveStudy] = useState<string | null>(null)
     const [aiForecast, setAiForecast] = useState<ForecastResult | null>(null)
 
@@ -277,7 +278,7 @@ export default function ImprovementPlan() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <Flame size={20} color="var(--orange)" />
                             <div>
-                                <div style={{ fontSize: 14, fontWeight: 700 }}>2 Day Streak</div>
+                                <div style={{ fontSize: 14, fontWeight: 700 }}>{totalMastered} Skills Verified</div>
                                 <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Keep going!</div>
                             </div>
                         </div>

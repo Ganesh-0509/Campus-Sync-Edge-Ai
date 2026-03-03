@@ -9,7 +9,10 @@ Responsibilities:
 """
 
 import json
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 
@@ -150,7 +153,7 @@ def validate_all() -> None:
       2. scoring.json weights sum ≤ 1.0.
       3. Every skill referenced in roles.json exists in skills.json.
     """
-    print("🔍  Validating configuration files...", flush=True)
+    logger.info("Validating configuration files...")
 
     skills  = load_skills()
     roles   = load_roles()
@@ -177,9 +180,8 @@ def validate_all() -> None:
                     f"Add '{skill}' to skills.json before using it in a role."
                 )
 
-    print(
-        f"✅  Config valid — "
+    logger.info(
+        f"Config valid — "
         f"{len(skills)} skills | {len(roles)} roles | "
-        f"weights sum={weight_sum:.2f}",
-        flush=True,
+        f"weights sum={weight_sum:.2f}"
     )

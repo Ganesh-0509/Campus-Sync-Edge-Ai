@@ -22,6 +22,14 @@ export default function Settings() {
 
     const handleSave = () => {
         localStorage.setItem('cse_notifs', String(notifications))
+        localStorage.setItem('cse_theme', darkMode ? 'dark' : 'light')
+        localStorage.setItem('cse_privacy', String(privacyMode))
+        // Apply theme immediately
+        if (darkMode) {
+            document.documentElement.classList.remove('light-mode')
+        } else {
+            document.documentElement.classList.add('light-mode')
+        }
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
     }
@@ -57,7 +65,7 @@ export default function Settings() {
                                 <div style={{ fontSize: 14, fontWeight: 700 }}>AI Analysis Notifications</div>
                                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Get real-time alerts when your resume analysis is finalized</div>
                             </div>
-                            <div className={`toggle ${notifications ? 'on' : ''}`} onClick={() => setNotifications(!notifications)} />
+                            <div className={`toggle ${notifications ? 'on' : ''}`} role="switch" aria-checked={notifications} aria-label="AI Analysis Notifications" tabIndex={0} onClick={() => setNotifications(!notifications)} onKeyDown={e => e.key === 'Enter' && setNotifications(!notifications)} />
                         </div>
 
                         <div className="settings-row" style={{ padding: '12px 0' }}>
@@ -65,7 +73,7 @@ export default function Settings() {
                                 <div style={{ fontSize: 14, fontWeight: 700 }}>Enhanced Privacy</div>
                                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Anonymize all resume data before cloud processing</div>
                             </div>
-                            <div className={`toggle ${privacyMode ? 'on' : ''}`} onClick={() => setPrivacyMode(!privacyMode)} />
+                            <div className={`toggle ${privacyMode ? 'on' : ''}`} role="switch" aria-checked={privacyMode} aria-label="Enhanced Privacy" tabIndex={0} onClick={() => setPrivacyMode(!privacyMode)} onKeyDown={e => e.key === 'Enter' && setPrivacyMode(!privacyMode)} />
                         </div>
                     </div>
 
@@ -134,11 +142,11 @@ export default function Settings() {
                                 <div style={{ overflow: 'hidden', borderRadius: 10, border: '1px solid var(--border)' }}>
                                     <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
                                         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Accuracy Rating</span>
-                                        <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--cyan)' }}>{health?.accuracy ? `${(health.accuracy * 100).toFixed(1)}%` : '96.4%'}</span>
+                                        <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--cyan)' }}>{health?.accuracy ? `${(health.accuracy * 100).toFixed(1)}%` : '--'}</span>
                                     </div>
                                     <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.01)', display: 'flex', justifyContent: 'space-between' }}>
                                         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Vocabulary Size</span>
-                                        <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--blue)' }}>{health?.vocabulary_size?.toLocaleString() ?? '142,000'} words</span>
+                                        <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--blue)' }}>{health?.vocabulary_size?.toLocaleString() ?? '--'} words</span>
                                     </div>
                                 </div>
                             </div>

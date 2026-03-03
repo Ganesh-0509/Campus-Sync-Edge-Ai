@@ -261,5 +261,49 @@
     "object oriented",
     "oops",
     "oop"
+  ],
+  "generative ai": [
+    "generative ai",
+    "genai"
+  ],
+  "llm": [
+    "llm",
+    "large language models",
+    "fine-tuning"
+  ],
+  "prompt engineering": [
+    "prompt engineering"
+  ],
+  "vector databases": [
+    "vector database",
+    "pinecone",
+    "chromadb",
+    "weaviate"
+  ],
+  "rag": [
+    "rag",
+    "retrieval augmented generation"
+  ],
+  "cybersecurity": [
+    "cybersecurity",
+    "secure coding",
+    "api security",
+    "security"
+  ],
+  "finops": [
+    "finops",
+    "cost optimization"
+  ],
+  "aiops": [
+    "aiops"
+  ],
+  "gitops": [
+    "gitops",
+    "argocd",
+    "flux"
+  ],
+  "cloud computing": [
+    "cloud computing",
+    "cloud-native"
   ]
 }

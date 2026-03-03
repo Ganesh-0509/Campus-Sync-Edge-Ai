@@ -102,8 +102,8 @@ async def get_admin_stats():
         # Count unique emails for true "active students"
         emails = set(r.get("user_email") for r in resp.data if r.get("user_email"))
         active_students = len(emails)
-    except:
-        active_students = 142 # Fallback
+    except Exception:
+        active_students = 0  # Fallback
         
     return {
         "pending_reviews": pending,

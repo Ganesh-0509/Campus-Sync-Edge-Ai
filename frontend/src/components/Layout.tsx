@@ -2,16 +2,12 @@ import { NavLink, Outlet } from 'react-router-dom'
 import {
     LayoutDashboard, FileText, BarChart2, ZapOff,
     CheckSquare, MessageSquare, TrendingUp, GitCompare,
-    Building2, Settings, Sun, Moon, Shield, Cpu
+    Building2, Settings, Sun, Moon, Shield, Cpu, Menu, X as XIcon
 } from 'lucide-react'
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { PrivacyContext } from '../context/PrivacyContext'
 import { isOnDeviceReady } from '../utils/onDevicePredictor'
-
-/* ─── Privacy Mode Context ──────────────────────────── */
-interface PrivacyCtx { privacy: boolean; setPrivacy: (v: boolean) => void }
-export const PrivacyContext = createContext<PrivacyCtx>({ privacy: false, setPrivacy: () => { } })
-export function usePrivacy() { return useContext(PrivacyContext) }
 
 const NAV_ITEMS = [
     { to: '/dashboard', label: 'Dashboard Overview', Icon: LayoutDashboard },
@@ -30,6 +26,7 @@ const NAV_ITEMS = [
 export default function Layout() {
     const [privacy, setPrivacy] = useState(() => localStorage.getItem('cse_privacy') === 'true')
     const [theme, setTheme] = useState(() => localStorage.getItem('cse_theme') || 'dark')
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
     useEffect(() => { localStorage.setItem('cse_privacy', String(privacy)) }, [privacy])
 
@@ -45,12 +42,24 @@ export default function Layout() {
     return (
         <PrivacyContext.Provider value={{ privacy, setPrivacy }}>
             <div className="app-shell">
+                {/* ── Mobile overlay ── */}
+                {mobileMenuOpen && (
+                    <div className="mobile-overlay" onClick={() => setMobileMenuOpen(false)} />
+                )}
+
                 {/* ── Sidebar ── */}
-                <aside className="sidebar">
+                <aside className={`sidebar ${mobileMenuOpen ? 'sidebar--mobile-open' : ''}`}>
                     <div className="sidebar__logo">
                         <div className="sidebar__logo-icon">⚡</div>
                         <div className="sidebar__logo-name">CampusSync</div>
                         <div className="sidebar__logo-sub">Edge AI</div>
+                        <button
+                            className="mobile-close-btn"
+                            onClick={() => setMobileMenuOpen(false)}
+                            aria-label="Close navigation menu"
+                        >
+                            <XIcon size={20} />
+                        </button>
                     </div>
 
                     {/* Privacy Mode indicator in sidebar */}
@@ -69,12 +78,13 @@ export default function Layout() {
                         </div>
                     )}
 
-                    <nav className="sidebar__nav">
+                    <nav className="sidebar__nav" aria-label="Main navigation">
                         {NAV_ITEMS.map(({ to, label, Icon }) => (
                             <NavLink
                                 key={to}
                                 to={to}
                                 className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+                                onClick={() => setMobileMenuOpen(false)}
                             >
                                 <Icon className="nav-item__icon" size={16} />
                                 {label}
@@ -85,7 +95,7 @@ export default function Layout() {
 
                 {/* ── Main ── */}
                 <div className="main-area">
-                    <Navbar privacy={privacy} setPrivacy={setPrivacy} theme={theme} setTheme={setTheme} />
+                    <Navbar privacy={privacy} setPrivacy={setPrivacy} theme={theme} setTheme={setTheme} onMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} />
                     <main>
                         <Outlet />
                     </main>
@@ -96,7 +106,7 @@ export default function Layout() {
 }
 
 /* ── Navbar ─────────────────────────────────────────── */
-function Navbar({ privacy, setPrivacy, theme, setTheme }: { privacy: boolean; setPrivacy: (v: boolean) => void; theme: string; setTheme: (v: string) => void }) {
+function Navbar({ privacy, setPrivacy, theme, setTheme, onMenuToggle }: { privacy: boolean; setPrivacy: (v: boolean) => void; theme: string; setTheme: (v: string) => void; onMenuToggle: () => void }) {
     const { user } = useAuth()
     const [onDevice, setOnDevice] = useState(false)
     const initials = user?.name
@@ -113,6 +123,15 @@ function Navbar({ privacy, setPrivacy, theme, setTheme }: { privacy: boolean; se
 
     return (
         <header className="navbar">
+            {/* Hamburger button for mobile */}
+            <button
+                className="navbar__btn mobile-menu-btn"
+                onClick={onMenuToggle}
+                aria-label="Open navigation menu"
+            >
+                <Menu size={20} />
+            </button>
+
             {/* Search placeholder removed – can be added later if needed */}
 
             <div className="navbar__actions">
@@ -143,6 +162,7 @@ function Navbar({ privacy, setPrivacy, theme, setTheme }: { privacy: boolean; se
                 <button
                     className="navbar__btn"
                     title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                    aria-label={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                     onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 >
                     {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}

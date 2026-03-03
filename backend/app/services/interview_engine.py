@@ -16,7 +16,7 @@ def _get_skills():
     global _SKILLS
     if _SKILLS is None:
         try: _SKILLS = load_skills()
-        except: _SKILLS = {}
+        except Exception: _SKILLS = {}
     return _SKILLS
 
 # ── Question Bank ─────────────────────────────────────────────────────────────

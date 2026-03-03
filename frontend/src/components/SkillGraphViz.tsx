@@ -14,7 +14,7 @@ import { useState, useEffect, useRef } from 'react'
 interface Node {
     id: string
     label: string
-    type: 'center' | 'detected' | 'missing-core' | 'missing-optional'
+    type: 'center' | 'detected' | 'missing-core' | 'missing-high' | 'missing-medium'
     x: number
     y: number
     r: number
@@ -30,14 +30,16 @@ const COLOR: Record<string, string> = {
     center: '#3b82f6',
     detected: '#22c55e',
     'missing-core': '#ef4444',
-    'missing-optional': '#f59e0b',
+    'missing-high': '#f59e0b',
+    'missing-medium': '#3b82f6',
 }
 
 const GLOW: Record<string, string> = {
     center: 'rgba(59,130,246,0.5)',
     detected: 'rgba(34,197,94,0.45)',
     'missing-core': 'rgba(239,68,68,0.45)',
-    'missing-optional': 'rgba(245,158,11,0.4)',
+    'missing-high': 'rgba(245,158,11,0.4)',
+    'missing-medium': 'rgba(59,130,246,0.4)',
 }
 
 function polar(cx: number, cy: number, r: number, angleDeg: number) {
@@ -119,7 +121,8 @@ export default function SkillGraphViz({
     nodes.push({ id: 'you', label: 'You', type: 'center', x: cx, y: cy, r: 28 })
     const innerSkills = detected.slice(0, 10)
     const coreMissing = missingCore.slice(0, 6)
-    const optMissing = missingOptional.slice(0, 5)
+    const topOpt = missingOptional.slice(0, 2)
+    const otherOpt = missingOptional.slice(2, 6)
 
     innerSkills.forEach((s, i) => {
         const { x, y } = polar(cx, cy, 145, (i / innerSkills.length) * 360)
@@ -132,9 +135,14 @@ export default function SkillGraphViz({
         nodes.push({ id: s, label: s, type: 'missing-core', x, y, r: 14 })
     })
 
-    optMissing.forEach((s, i) => {
-        const { x, y } = polar(cx, cy, 310, 20 + (i / Math.max(optMissing.length, 1)) * 360)
-        nodes.push({ id: s, label: s, type: 'missing-optional', x, y, r: 12 })
+    topOpt.forEach((s, i) => {
+        const { x, y } = polar(cx, cy, 310, 20 + (i / Math.max(topOpt.length, 1)) * 360)
+        nodes.push({ id: s, label: s, type: 'missing-high', x, y, r: 12 })
+    })
+
+    otherOpt.forEach((s, i) => {
+        const { x, y } = polar(cx, cy, 360, 40 + (i / Math.max(otherOpt.length, 1)) * 360)
+        nodes.push({ id: s, label: s, type: 'missing-medium', x, y, r: 11 })
     })
 
     const nodeMap = new Map<string, Node>(nodes.map(n => [n.id, n]))
@@ -261,7 +269,7 @@ export default function SkillGraphViz({
                                 <circle cx={n.x} cy={n.y} r={n.r} fill={isYou ? '#1e3a5f' : `${col}20`} stroke={col} strokeWidth={isYou ? 2.5 : 1.8} />
                                 {(isYou || n.r >= 17) && (
                                     <text x={n.x} y={n.y + 4} textAnchor="middle" fontSize={isYou ? 10 : 8} fontWeight="700" fill={col}>
-                                        {isYou ? 'YOU' : n.label.length > 8 ? n.label.slice(0, 7) + '…' : n.label}
+                                        {isYou ? 'YOU' : n.label.charAt(0).toUpperCase() + n.label.slice(1)}
                                     </text>
                                 )}
                             </g>
@@ -273,7 +281,8 @@ export default function SkillGraphViz({
                         const label = tooltip.type === 'center' ? '📍 Your Profile' :
                             tooltip.type === 'detected' ? `✅ You have: ${tooltip.label}` :
                                 tooltip.type === 'missing-core' ? `🔴 Critical gap: ${tooltip.label}` :
-                                    `🟡 Optional: ${tooltip.label}`
+                                    tooltip.type === 'missing-high' ? `🟠 High Priority: ${tooltip.label}` :
+                                        `🔵 Medium Priority: ${tooltip.label}`
                         return (
                             <g>
                                 <rect
@@ -293,9 +302,9 @@ export default function SkillGraphViz({
             {/* Legend */}
             <div style={{ position: 'absolute', bottom: 12, left: 0, right: 0, display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center', pointerEvents: 'none' }}>
                 {[
-                    { color: '#22c55e', label: 'Done' },
                     { color: '#ef4444', label: 'Critical' },
-                    { color: '#f59e0b', label: 'Optional' },
+                    { color: '#f59e0b', label: 'High' },
+                    { color: '#3b82f6', label: 'Medium' },
                 ].map(({ color, label }) => (
                     <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: '#94a3b8', background: 'rgba(0,0,0,0.6)', padding: '2px 8px', borderRadius: 4 }}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />

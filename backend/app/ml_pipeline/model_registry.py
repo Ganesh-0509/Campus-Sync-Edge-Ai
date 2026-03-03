@@ -15,9 +15,12 @@ Two separate storage areas:
 
 from __future__ import annotations
 import json
+import logging
 import pickle
 from pathlib import Path
 from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 from collections import defaultdict
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
@@ -129,7 +132,7 @@ def save_trained_models(
     with open(d / "metadata_v1.json", "w", encoding="utf-8") as f:
         json.dump(metadata, f, indent=2)
 
-    print(f"💾  Models saved to {d}", flush=True)
+    logger.info(f"Models saved to {d}")
     return metadata
 
 
@@ -246,7 +249,7 @@ def save_trained_models_v2(
     with open(d / "metadata_v2.json", "w", encoding="utf-8") as f:
         json.dump(metadata, f, indent=2)
 
-    print(f"Models v2 saved to {d}", flush=True)
+    logger.info(f"Models v2 saved to {d}")
     return metadata
 
 

@@ -28,22 +28,23 @@ export default function Dashboard() {
     // Skill coverage: computed from real detected_skills
     const hasSkill = (list: string[]) => list.filter(s => skills.map(x => x.toLowerCase()).includes(s)).length
     const SKILL_COVERAGE = [
-        { label: 'Programming Languages', pct: analysis ? Math.min(100, Math.round(hasSkill(['python', 'java', 'javascript', 'typescript', 'c', 'c++', 'go', 'rust', 'kotlin']) / 9 * 100) + 20) : 0, cls: 'blue' },
-        { label: 'Frameworks', pct: analysis ? Math.min(100, Math.round(hasSkill(['react', 'vue', 'angular', 'django', 'flask', 'fastapi', 'spring', 'express', 'next']) / 9 * 100) + 15) : 0, cls: 'cyan' },
-        { label: 'Core CS Concepts', pct: analysis ? Math.min(100, Math.round(hasSkill(['dsa', 'sql', 'git', 'api', 'rest', 'testing', 'debugging', 'algorithms', 'data structures']) / 9 * 100) + 30) : 0, cls: 'green' },
-        { label: 'Tools & Platforms', pct: analysis ? Math.min(100, Math.round(hasSkill(['docker', 'aws', 'gcp', 'kubernetes', 'linux', 'git', 'ci/cd', 'terraform']) / 8 * 100) + 10) : 0, cls: 'purple' },
+        { label: 'Programming Languages', pct: analysis ? Math.min(100, Math.round(hasSkill(['python', 'java', 'javascript', 'typescript', 'c', 'c++', 'go', 'rust', 'kotlin']) / 9 * 100)) : 0, cls: 'blue' },
+        { label: 'Frameworks', pct: analysis ? Math.min(100, Math.round(hasSkill(['react', 'vue', 'angular', 'django', 'flask', 'fastapi', 'spring', 'express', 'next']) / 9 * 100)) : 0, cls: 'cyan' },
+        { label: 'Core CS Concepts', pct: analysis ? Math.min(100, Math.round(hasSkill(['dsa', 'sql', 'git', 'api', 'rest', 'testing', 'debugging', 'algorithms', 'data structures']) / 9 * 100)) : 0, cls: 'green' },
+        { label: 'Tools & Platforms', pct: analysis ? Math.min(100, Math.round(hasSkill(['docker', 'aws', 'gcp', 'kubernetes', 'linux', 'git', 'ci/cd', 'terraform']) / 8 * 100)) : 0, cls: 'purple' },
     ]
 
     const METRICS = [
-        { icon: <Activity size={14} />, label: 'Readiness Score', value: analysis ? `${score}%` : '--', sub: analysis ? (chartHistory.length > 1 ? `+${score - chartHistory[0].value}% overall` : '+5% this week') : 'No analysis yet', pct: score, bg: 'rgba(59,130,246,0.12)', col: '#3b82f6' },
+        { icon: <Activity size={14} />, label: 'Readiness Score', value: analysis ? `${score}%` : '--', sub: analysis ? (chartHistory.length > 1 ? `+${score - chartHistory[0].value}% overall` : 'First analysis') : 'No analysis yet', pct: score, bg: 'rgba(59,130,246,0.12)', col: '#3b82f6' },
         { icon: <Lightbulb size={14} />, label: 'Core Skill Coverage', value: analysis ? `${corePct}%` : '--', sub: analysis ? `${skills.length} skills detected` : 'Upload resume', pct: corePct, bg: 'rgba(34,211,238,0.12)', col: '#22d3ee' },
         { icon: <AlertCircle size={14} />, label: 'Missing Critical Skills', value: analysis ? String(missingCount) : '--', sub: analysis ? `${Math.min(missingCount, 3)} high priority` : 'Pending analysis', pct: analysis ? Math.min(100, (missingCount / 10) * 100) : 0, bg: 'rgba(245,158,11,0.12)', col: '#f59e0b' },
         { icon: <Activity size={14} />, label: 'Interview Readiness', value: analysis ? readiness : '--', sub: analysis ? (analytics?.total_analyses ? `${analytics.total_analyses} total analyses` : 'Level 2 of 4') : 'Ready to start', pct: analysis ? score * 0.8 : 0, bg: 'rgba(167,139,250,0.12)', col: '#a78bfa' },
     ]
 
-    const TOP_MISSING = analysis ? missingCore.slice(0, 5).map((skill, i) => ({
-        skill, priority: i < 2 ? 'High' : i < 4 ? 'Medium' : 'Low'
-    })) : []
+    const TOP_MISSING = analysis ? [
+        ...(analysis.missing_core_skills || []).slice(0, 3).map(s => ({ skill: s, priority: 'Critical' })),
+        ...(analysis.missing_optional_skills || []).slice(0, 2).map(s => ({ skill: s, priority: 'High' }))
+    ] : []
 
 
     return (

@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { useResume, getIndustryAlignment } from '../context/ResumeContext'
 import { Building2, Monitor, Rocket, ExternalLink, Info, BookOpen, Shield } from 'lucide-react'
 
@@ -36,6 +37,7 @@ const INDUSTRY_DETAILS: Record<string, {
 }
 
 export default function IndustryAlignment() {
+    const navigate = useNavigate()
     const { analysis } = useResume()
     const score = analysis?.final_score ?? null
     const align = score !== null ? getIndustryAlignment(score) : null
@@ -87,7 +89,7 @@ export default function IndustryAlignment() {
                             </div>
                         </div>
                         <button
-                            onClick={() => window.location.href = '/resume-analyzer'}
+                            onClick={() => navigate('/resume-analyzer')}
                             style={{ padding: '8px 16px', background: 'var(--blue)', border: 'none', borderRadius: 6, color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                         >
                             Upload Now

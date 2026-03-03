@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import MiniLineChart from '../components/MiniLineChart'
 import { useResume } from '../context/ResumeContext'
 import { useAuth } from '../context/AuthContext'
 import { loadHistory, getHistoryOrDemo } from '../utils/history'
@@ -8,22 +7,10 @@ import { Star, Award, Zap, Trophy, Pin, Sparkles, BookOpen, TrendingUp, Shield }
 import StudyHub from '../components/StudyHub'
 
 
-const HISTORY = [
-    { label: 'Jan', value: 38 }, { label: 'Feb', value: 43 }, { label: 'Mar', value: 50 },
-    { label: 'Apr', value: 58 }, { label: 'May', value: 65 }, { label: 'Jun', value: 74 },
-]
-
 const HEATMAP = [
     { month: 'Month 1', skills: ['DSA', 'Python', 'React', 'SQL', 'Git'], bright: 0 },
     { month: 'Month 2', skills: ['DSA', 'Python', 'React', 'SQL', 'Git'], bright: 2 },
     { month: 'Month 3', skills: ['DSA', 'Python', 'React', 'SQL', 'Git'], bright: 5 },
-]
-
-const MILESTONES = [
-    { icon: Star, label: 'First Resume Upload', date: 'Jan 15', done: true },
-    { icon: Award, label: 'Reached 50% Score', date: 'Mar 22', done: true },
-    { icon: Zap, label: 'Placement Ready', date: 'May 10', done: true },
-    { icon: Trophy, label: 'Interview Ready', date: '—', done: false },
 ]
 
 export default function ProgressTracking() {
@@ -292,7 +279,7 @@ export default function ProgressTracking() {
                             </div>
                         </div>
                         <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
-                            Your profile has been cross-referenced with <strong>1.4M+</strong> historical placement patterns for maximum accuracy.
+                            Your profile has been analyzed and matched against our growing database of placement patterns for personalized recommendations.
                         </p>
                     </div>
                 </div>

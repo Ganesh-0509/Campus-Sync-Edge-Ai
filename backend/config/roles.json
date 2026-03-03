@@ -7,16 +7,21 @@
             "dsa",
             "git",
             "api",
-            "rest"
+            "system design",
+            "cybersecurity",
+            "cloud computing",
+            "ci/cd"
         ],
         "optional": [
             "docker",
             "aws",
             "react",
             "typescript",
-            "system design",
-            "ci/cd",
-            "testing"
+            "generative ai",
+            "llm",
+            "prompt engineering",
+            "microservices",
+            "next.js"
         ]
     },
     "Frontend Developer": {
@@ -35,7 +40,8 @@
             "figma",
             "vue",
             "tailwind",
-            "graphql"
+            "graphql",
+            "generative ai"
         ]
     },
     "Backend Developer": {
@@ -43,19 +49,21 @@
             "python",
             "sql",
             "api",
-            "rest",
             "git",
-            "dsa",
-            "postgresql"
+            "postgresql",
+            "system design",
+            "cybersecurity",
+            "microservices"
         ],
         "optional": [
             "docker",
             "aws",
             "node.js",
             "redis",
-            "microservices",
             "grpc",
-            "mongodb"
+            "mongodb",
+            "dsa",
+            "llm"
         ]
     },
     "Full Stack Developer": {
@@ -67,16 +75,18 @@
             "api",
             "git",
             "html",
-            "css"
+            "css",
+            "postgresql"
         ],
         "optional": [
             "typescript",
             "docker",
             "aws",
             "next.js",
-            "postgresql",
             "mongodb",
-            "ci/cd"
+            "ci/cd",
+            "system design",
+            "generative ai"
         ]
     },
     "Data Scientist": {
@@ -84,9 +94,9 @@
             "python",
             "sql",
             "machine learning",
-            "statistics",
             "pandas",
             "numpy",
+            "statistics",
             "scikit-learn"
         ],
         "optional": [
@@ -96,7 +106,9 @@
             "r",
             "spark",
             "tableau",
-            "mlops"
+            "mlops",
+            "generative ai",
+            "llm"
         ]
     },
     "ML Engineer": {
@@ -107,17 +119,21 @@
             "tensorflow",
             "pytorch",
             "numpy",
-            "git"
+            "pandas",
+            "scikit-learn",
+            "mlops",
+            "statistics"
         ],
         "optional": [
             "docker",
             "kubernetes",
-            "mlops",
             "spark",
             "aws",
-            "gcp",
             "onnx",
-            "fastapi"
+            "fastapi",
+            "rag",
+            "vector databases",
+            "llm"
         ]
     },
     "DevOps Engineer": {
@@ -128,16 +144,20 @@
             "git",
             "ci/cd",
             "bash",
-            "terraform"
+            "terraform",
+            "ansible",
+            "azure",
+            "cybersecurity"
         ],
         "optional": [
             "aws",
             "gcp",
-            "azure",
             "jenkins",
-            "ansible",
             "prometheus",
-            "python"
+            "python",
+            "gitops",
+            "finops",
+            "aiops"
         ]
     }
 }

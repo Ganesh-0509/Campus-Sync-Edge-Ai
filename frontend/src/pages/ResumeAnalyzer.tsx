@@ -4,7 +4,7 @@ import { useResume } from '../context/ResumeContext'
 import { useAuth } from '../context/AuthContext'
 import { uploadResume, predictResume, getRoles } from '../api/client'
 import { Upload, FileText, CheckCircle, Cpu, Shield } from 'lucide-react'
-import { usePrivacy } from '../components/Layout'
+import { usePrivacy } from '../context/PrivacyContext'
 import { predictOnDevice, isOnDeviceReady } from '../utils/onDevicePredictor'
 
 export default function ResumeAnalyzer() {
@@ -76,10 +76,11 @@ export default function ResumeAnalyzer() {
                 console.warn('ML Prediction failed (fallback to base):', e)
                 setPrediction({
                     predicted_role: role,
-                    confidence: 1.0,
+                    confidence: 0,
                     resume_score: result.final_score,
                     weak_areas: result.missing_core_skills.slice(0, 3),
-                    model_version: 'fallback-v1'
+                    model_version: 'fallback-v1',
+                    inference_time_ms: 0
                 })
             }
             navigate('/readiness-score')
