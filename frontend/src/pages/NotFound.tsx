@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Ghost } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
+import SEO from '@/components/SEO'
 
 export default function NotFound() {
   return (
@@ -10,6 +11,11 @@ export default function NotFound() {
       animate={{ opacity: 1, y: 0 }}
       className="flex min-h-[60vh] flex-col items-center justify-center gap-6 text-center"
     >
+      <SEO
+        title="Page not found"
+        description="The page you're looking for doesn't exist or has been moved."
+        noindex
+      />
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
@@ -27,9 +33,9 @@ export default function NotFound() {
         </p>
       </div>
 
-      <Link to="/dashboard" className={buttonVariants({ variant: "default" }) + " gap-2"}>
+      <Link to="/" className={buttonVariants({ variant: "default" }) + " gap-2"}>
         <ArrowLeft className="size-4" />
-        Back to Dashboard
+        Back to home
       </Link>
     </motion.div>
   )

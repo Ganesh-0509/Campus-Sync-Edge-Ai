@@ -23,8 +23,10 @@
   <meta name="twitter:description" content="AI-powered career readiness platform for tech jobs." />
   <meta name="twitter:image" content="/og-image.png" />
 
-  <!-- Canonical -->
-  <link rel="canonical" href="https://getjobyn.pages.dev" />
+  <!-- Canonical is set per-route by the <SEO> component (react-helmet-async).
+       Do NOT hardcode one here: every route serves this same index.html, so a
+       static canonical makes every sub-page (e.g. /quick-score) declare the
+       homepage as its canonical → Google drops them as duplicates. -->
 
   <link rel="icon" type="image/png" href="/logo.png" />
   <link rel="apple-touch-icon" href="/logo.png" />

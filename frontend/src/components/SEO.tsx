@@ -7,6 +7,8 @@ interface SEOProps {
   ogImage?: string
   ogType?: string
   keywords?: string
+  /** Emit `<meta name="robots" content="noindex, follow">` — use on 404 and other non-indexable pages. */
+  noindex?: boolean
 }
 
 export default function SEO({
@@ -16,6 +18,7 @@ export default function SEO({
   ogImage = '/og-image.png',
   ogType = 'website',
   keywords,
+  noindex = false,
 }: SEOProps) {
   const fullTitle = title.includes('Jobyn') ? title : `${title} — Jobyn`
   const canonicalUrl = canonical || `https://getjobyn.pages.dev${window.location.pathname}`
@@ -25,6 +28,7 @@ export default function SEO({
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
       {keywords && <meta name="keywords" content={keywords} />}
+      {noindex && <meta name="robots" content="noindex, follow" />}
       <link rel="canonical" href={canonicalUrl} />
 
       {/* Open Graph */}

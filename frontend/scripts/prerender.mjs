@@ -22,6 +22,7 @@ const ROUTES = [
   { path: '/terms', file: 'terms/index.html' },
   { path: '/docs', file: 'docs/index.html' },
   { path: '/quick-score', file: 'quick-score/index.html' },
+  { path: '/blog', file: 'blog/index.html' },
 ]
 
 const MIME_TYPES = {
