@@ -4,6 +4,7 @@ import { ArrowRight, Calendar, Clock, BookOpen } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import SEO from '../components/SEO'
+import JsonLd from '../components/JsonLd'
 import LogoMark from '../components/LogoMark'
 import { getAllBlogPosts } from '../data/blog-posts'
 
@@ -36,6 +37,21 @@ export default function Blog() {
         title="Blog — Jobyn"
         description="Insights on resume optimization, skill development, campus placements, and career readiness for engineering students."
         keywords="resume tips, campus placements, career readiness, engineering students, skill gap analysis"
+      />
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'Blog',
+          name: 'Jobyn Blog',
+          url: 'https://getjobyn.pages.dev/blog',
+          blogPost: posts.map((p) => ({
+            '@type': 'BlogPosting',
+            headline: p.title,
+            description: p.excerpt,
+            datePublished: p.date,
+            url: `https://getjobyn.pages.dev/blog/${p.slug}`,
+          })),
+        }}
       />
 
       {/* Header */}

@@ -6,6 +6,7 @@ interface SEOProps {
   canonical?: string
   ogImage?: string
   ogType?: string
+  /** @deprecated Google ignores the keywords meta tag; accepted for back-compat but no longer rendered. */
   keywords?: string
   /** Emit `<meta name="robots" content="noindex, follow">` — use on 404 and other non-indexable pages. */
   noindex?: boolean
@@ -17,7 +18,6 @@ export default function SEO({
   canonical,
   ogImage = '/og-image.png',
   ogType = 'website',
-  keywords,
   noindex = false,
 }: SEOProps) {
   const fullTitle = title.includes('Jobyn') ? title : `${title} — Jobyn`
@@ -27,7 +27,6 @@ export default function SEO({
     <Helmet>
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
-      {keywords && <meta name="keywords" content={keywords} />}
       {noindex && <meta name="robots" content="noindex, follow" />}
       <link rel="canonical" href={canonicalUrl} />
 

@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import SEO from '../components/SEO'
+import JsonLd from '../components/JsonLd'
 
 const LOADING_STAGES = [
   { icon: FileText, label: 'Parsing your resume' },
@@ -77,6 +78,19 @@ export default function QuickScore() {
         title="Free Resume Score — Get Placement Ready in 30 Seconds"
         description="Get instant AI-powered resume score without signup. Trained on 57,100 real resumes. Identify your placement readiness in 30 seconds."
         keywords="free resume score, resume analyzer, placement readiness, career score"
+      />
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'SoftwareApplication',
+          name: 'Jobyn Free Resume Score',
+          applicationCategory: 'BusinessApplication',
+          operatingSystem: 'Web',
+          url: 'https://getjobyn.pages.dev/quick-score',
+          description:
+            'Instant AI-powered resume score for engineering students — no signup, trained on 57,100 real resumes.',
+          offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
+        }}
       />
       {/* Minimal Header */}
       <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">

@@ -834,8 +834,10 @@ export default function Landing() {
           <div className="flex flex-wrap justify-center gap-6 text-xs font-bold uppercase tracking-wider text-muted-foreground">
             <a href="https://getjobyn.pages.dev" target="_blank" rel="noreferrer" className="flex items-center gap-1 transition-colors hover:text-primary">Live App <ArrowUpRight className="inline size-3" /></a>
             <a href="https://github.com/Ganesh-0509/Jobyn" target="_blank" rel="noreferrer" className="flex items-center gap-1 transition-colors hover:text-primary">GitHub <ArrowUpRight className="inline size-3" /></a>
-            <Link to="/privacy" className="flex items-center gap-1 transition-colors hover:text-primary">Privacy <ArrowUpRight className="inline size-3" /></Link>
+            <Link to="/quick-score" className="flex items-center gap-1 transition-colors hover:text-primary">Free Resume Score <ArrowUpRight className="inline size-3" /></Link>
+            <Link to="/blog" className="flex items-center gap-1 transition-colors hover:text-primary">Blog <ArrowUpRight className="inline size-3" /></Link>
             <Link to="/docs" className="flex items-center gap-1 transition-colors hover:text-primary">Docs <ArrowUpRight className="inline size-3" /></Link>
+            <Link to="/privacy" className="flex items-center gap-1 transition-colors hover:text-primary">Privacy <ArrowUpRight className="inline size-3" /></Link>
           </div>
           <div className="text-xs font-medium text-stone-400">© 2026 Jobyn • Placement OS</div>
         </div>
