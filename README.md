@@ -1,5 +1,6 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/Build-Passing-brightgreen?style=flat-square" alt="Build Passing" />
+  <a href="https://github.com/Ganesh-0509/Jobyn/actions/workflows/ci.yml"><img src="https://github.com/Ganesh-0509/Jobyn/actions/workflows/ci.yml/badge.svg?branch=main-backup" alt="CI Status" /></a>
+  <a href="https://github.com/Ganesh-0509/Jobyn/actions/workflows/deploy-frontend.yml"><img src="https://github.com/Ganesh-0509/Jobyn/actions/workflows/deploy-frontend.yml/badge.svg" alt="Deploy Status" /></a>
   <img src="https://img.shields.io/badge/Python-3.12-blue?style=flat-square&logo=python&logoColor=white" alt="Python 3.12" />
   <img src="https://img.shields.io/badge/Node-20+-339933?style=flat-square&logo=node.js&logoColor=white" alt="Node 20+" />
   <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="MIT License" />
@@ -33,6 +34,12 @@
   <img src="https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white" />
   <img src="https://img.shields.io/badge/PGVector-336791?style=flat-square&logo=postgresql&logoColor=white" />
   <img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white" />
+</p>
+
+<p align="center">
+  <a href="https://getjobyn.pages.dev/quick-score">
+    <img src="frontend/public/product-quickscore.webp" alt="Jobyn — instant AI-powered resume readiness score" width="820" />
+  </a>
 </p>
 
 ---
@@ -462,14 +469,17 @@ Full schema: [backend/supabase_schema.sql](backend/supabase_schema.sql)
 
 ## Deployment
 
-### Render (One-Click)
+### Frontend: Cloudflare Pages
 
-1. Push to GitHub
-2. Render Dashboard → **New Blueprint** → Connect repo
-3. Render auto-creates:
-   - `jobyn-api` — Python web service (FastAPI + Uvicorn)
-   - `jobyn` — Static site (Vite build + Nginx)
-4. Set environment variables in Render dashboard
+Live at **https://getjobyn.pages.dev**. A GitHub Actions workflow
+(`.github/workflows/deploy-frontend.yml`) builds the SPA **with prerendering** —
+so public pages ship real HTML and are crawlable/indexable — and uploads `dist/`
+to Cloudflare Pages via Wrangler on every push to `main-backup`.
+
+### Backend: Render
+
+Render Blueprint (`render.yaml`) provisions `jobyn-api` (FastAPI + Uvicorn).
+Set environment variables in the Render dashboard.
 
 ### Docker
 
@@ -479,10 +489,9 @@ docker-compose up --build
 
 ### CI/CD
 
-GitHub Actions pipeline (`.github/workflows/ci.yml`):
-- **Frontend**: TypeScript check → Vitest → Vite build
-- **Backend**: Ruff lint → Pytest
-- **Deploy**: Triggered on `main` push after all checks pass
+GitHub Actions:
+- **`ci.yml`** — Frontend (TypeScript check, Vitest, Vite build) + Backend (Ruff lint, Pytest), on push/PR to `main-backup`
+- **`deploy-frontend.yml`** — builds with prerender, then deploys `dist/` to Cloudflare Pages on `main-backup`
 
 ---
 

@@ -2,9 +2,9 @@ name: Jobyn CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main-backup, main, develop]
   pull_request:
-    branches: [main]
+    branches: [main-backup, main]
 
 env:
   NODE_VERSION: "20"
