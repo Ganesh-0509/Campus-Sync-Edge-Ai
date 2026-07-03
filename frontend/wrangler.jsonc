@@ -6,12 +6,6 @@
   "assets": {
     "directory": "./dist",
     // Serve index.html for unknown routes so client-side React Router works.
-    "not_found_handling": "single-page-application",
-    // Prerendered routes are written as <route>/index.html. Without this,
-    // Cloudflare serves them at "/route/" and 308-redirects "/route" → "/route/",
-    // but our sitemap, canonical tags, and internal <Link>s all use the
-    // no-slash form. drop-trailing-slash serves them at "/route" (200) and
-    // redirects "/route/" → "/route", keeping every URL consistent.
-    "html_handling": "drop-trailing-slash"
+    "not_found_handling": "single-page-application"
   }
 }

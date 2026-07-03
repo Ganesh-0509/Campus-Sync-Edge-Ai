@@ -16,13 +16,17 @@ import puppeteer from 'puppeteer'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST = pathResolve(__dirname, '../dist')
 
+// Flat <route>.html files: Cloudflare Pages serves `quick-score.html` at
+// `/quick-score` (no trailing slash), matching the sitemap, canonical tags,
+// and internal <Link>s. `<route>/index.html` would instead serve at
+// `/quick-score/` and 308-redirect the no-slash URL.
 const ROUTES = [
   { path: '/', file: 'index.html' },
-  { path: '/privacy', file: 'privacy/index.html' },
-  { path: '/terms', file: 'terms/index.html' },
-  { path: '/docs', file: 'docs/index.html' },
-  { path: '/quick-score', file: 'quick-score/index.html' },
-  { path: '/blog', file: 'blog/index.html' },
+  { path: '/privacy', file: 'privacy.html' },
+  { path: '/terms', file: 'terms.html' },
+  { path: '/docs', file: 'docs.html' },
+  { path: '/quick-score', file: 'quick-score.html' },
+  { path: '/blog', file: 'blog.html' },
 ]
 
 const MIME_TYPES = {
