@@ -20,8 +20,14 @@ export default function SEO({
   ogType = 'website',
   noindex = false,
 }: SEOProps) {
+  const SITE = 'https://getjobyn.pages.dev'
   const fullTitle = title.includes('Jobyn') ? title : `${title} — Jobyn`
-  const canonicalUrl = canonical || `https://getjobyn.pages.dev${window.location.pathname}`
+  const canonicalUrl = canonical || `${SITE}${window.location.pathname}`
+  // og:image / twitter:image MUST be absolute — crawlers (Google, Facebook,
+  // LinkedIn, WhatsApp) drop relative image URLs, so the link preview shows no
+  // image. Resolve any relative path against the canonical origin.
+  const ogImageUrl = ogImage.startsWith('http') ? ogImage : `${SITE}${ogImage.startsWith('/') ? '' : '/'}${ogImage}`
+  const isDefaultOg = ogImageUrl === `${SITE}/og-image.png`
 
   return (
     <Helmet>
@@ -31,9 +37,15 @@ export default function SEO({
       <link rel="canonical" href={canonicalUrl} />
 
       {/* Open Graph */}
+      <meta property="og:site_name" content="Jobyn" />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={ogImage} />
+      <meta property="og:image" content={ogImageUrl} />
+      <meta property="og:image:secure_url" content={ogImageUrl} />
+      <meta property="og:image:alt" content={fullTitle} />
+      {isDefaultOg && <meta property="og:image:type" content="image/png" />}
+      {isDefaultOg && <meta property="og:image:width" content="1200" />}
+      {isDefaultOg && <meta property="og:image:height" content="630" />}
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:type" content={ogType} />
 
@@ -41,7 +53,8 @@ export default function SEO({
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={ogImage} />
+      <meta name="twitter:image" content={ogImageUrl} />
+      <meta name="twitter:image:alt" content={fullTitle} />
     </Helmet>
   )
 }
