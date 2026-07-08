@@ -144,7 +144,7 @@ function ReadinessGauge({ score, role, skills, coverage }: { score: number; role
         <Badge variant="outline" className="rounded-full border-accent/20 bg-accent/5 text-accent text-[10px] font-bold">LIVE</Badge>
       </div>
 
-      <svg viewBox="0 0 320 210" className="mx-auto w-full max-w-[340px]" role="img" aria-label={`Readiness score ${pct} percent`}>
+      <svg viewBox="0 0 320 210" className="mx-auto w-full max-w-85" role="img" aria-label={`Readiness score ${pct} percent`}>
         <defs>
           <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0" stopColor="#C2593F" />
@@ -200,7 +200,7 @@ function PipelineFlow() {
   return (
     <div className="relative mx-auto max-w-6xl px-6">
       {/* animated curved connector (desktop) */}
-      <div className="relative mb-[-26px] hidden h-[120px] md:block">
+      <div className="relative -mb-6.5 hidden h-30 md:block">
         <svg viewBox="0 0 1200 140" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" aria-hidden="true">
           <defs>
             <linearGradient id="flowGrad" x1="0" y1="0" x2="1" y2="0">
@@ -422,8 +422,8 @@ export default function Landing() {
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="hero-aura relative overflow-hidden bg-background pt-16 pb-20 md:pt-20 md:pb-24">
         <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
-          <div className="absolute left-[-12%] top-[-30%] h-[520px] w-[520px] rounded-full bg-primary/5 blur-[140px]" />
-          <div className="absolute right-[-18%] top-[40%] h-[440px] w-[440px] rounded-full bg-accent/5 blur-[120px]" />
+          <div className="absolute left-[-12%] top-[-30%] h-130 w-130 rounded-full bg-primary/5 blur-[140px]" />
+          <div className="absolute right-[-18%] top-[40%] h-110 w-110 rounded-full bg-accent/5 blur-[120px]" />
         </div>
 
         <div className="relative z-10 mx-auto max-w-6xl px-6">
@@ -440,7 +440,7 @@ export default function Landing() {
                 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }}
                 className="font-heading text-4xl font-light leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-6xl"
               >
-                57,100 resumes trained our AI. <span className="font-semibold italic text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Here's what it learned about landing your placement.</span>
+                57,100 resumes trained our AI. <span className="font-semibold italic text-transparent bg-clip-text bg-linear-to-r from-primary to-accent">Here's what it learned about landing your placement.</span>
               </motion.h1>
 
               <motion.p
@@ -499,7 +499,7 @@ export default function Landing() {
       {/* ── Tech stack logo wall (scrolling marquee) ─────────── */}
       <section className="overflow-hidden border-y border-border bg-white py-10">
         <p className="mb-7 px-6 text-center text-[11px] font-bold uppercase tracking-widest text-muted-foreground">We map your resume against the real engineering stack</p>
-        <div className="relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,#000_8%,#000_92%,transparent)]">
+        <div className="relative overflow-hidden mask-[linear-gradient(to_right,transparent,#000_8%,#000_92%,transparent)]">
           <motion.div
             className="flex w-max items-center gap-14"
             animate={reduce ? undefined : { x: ['-50%', '0%'] }}
@@ -556,7 +556,7 @@ export default function Landing() {
                     className={`group relative flex w-full items-center gap-4 overflow-hidden rounded-2xl border p-4 text-left transition-all duration-200 ${isActive ? 'lift border-primary/20 bg-white' : 'border-transparent bg-stone-50/70 hover:bg-stone-100/70'}`}
                     onClick={() => setActiveDomainIdx(index)}
                   >
-                    {isActive && <motion.span layoutId="skill-active-bar" className="absolute inset-y-2 left-0 w-1 rounded-full bg-gradient-to-b from-primary to-accent" />}
+                    {isActive && <motion.span layoutId="skill-active-bar" className="absolute inset-y-2 left-0 w-1 rounded-full bg-linear-to-b from-primary to-accent" />}
                     <div className={`shrink-0 rounded-xl p-2.5 transition-colors ${isActive ? 'bg-primary/10 text-primary' : 'bg-white text-stone-400 group-hover:text-stone-600'}`}>
                       <Icon className="size-5" />
                     </div>
@@ -596,7 +596,7 @@ export default function Landing() {
                         <span className="font-heading text-lg font-bold text-primary">{activeDomain.demand}</span>
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-stone-100">
-                        <motion.div className="h-full rounded-full bg-gradient-to-r from-primary to-accent" initial={{ width: 0 }} animate={{ width: activeDomain.demand }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }} />
+                        <motion.div className="h-full rounded-full bg-linear-to-r from-primary to-accent" initial={{ width: 0 }} animate={{ width: activeDomain.demand }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }} />
                       </div>
                     </div>
 
@@ -721,7 +721,7 @@ export default function Landing() {
                 <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Active Prompt</span>
                 <div className="text-xs font-bold leading-relaxed text-foreground">{SPEECH_SCENARIOS[speechIdx].question}</div>
               </div>
-              <div className="min-h-[135px] overflow-y-auto rounded-xl border border-stone-200 bg-white p-4">
+              <div className="min-h-33.75 overflow-y-auto rounded-xl border border-stone-200 bg-white p-4">
                 <p className="font-mono text-[11px] leading-relaxed text-foreground">{outputText || <span className="italic text-stone-400">Trigger vocal practice simulation below...</span>}</p>
               </div>
               <div className="flex items-center justify-between border-t border-stone-200/60 pt-4">
