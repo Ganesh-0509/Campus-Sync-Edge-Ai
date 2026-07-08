@@ -334,6 +334,25 @@ export default function Landing() {
       />
       <JsonLd data={{
         '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'Organization',
+            '@id': 'https://getjobyn.pages.dev/#organization',
+            name: 'Jobyn',
+            url: 'https://getjobyn.pages.dev/',
+            logo: 'https://getjobyn.pages.dev/logo.png'
+          },
+          {
+            '@type': 'WebSite',
+            '@id': 'https://getjobyn.pages.dev/#website',
+            name: 'Jobyn',
+            url: 'https://getjobyn.pages.dev/',
+            publisher: { '@id': 'https://getjobyn.pages.dev/#organization' }
+          }
+        ]
+      }} />
+      <JsonLd data={{
+        '@context': 'https://schema.org',
         '@type': 'SoftwareApplication',
         name: 'Jobyn',
         applicationCategory: 'EducationalApplication',
