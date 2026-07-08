@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import LogoMark from '../components/LogoMark'
 import ResumeScanVisual from '../components/landing/ResumeScanVisual'
+import HeroVideo from '../components/landing/HeroVideo'
 import JsonLd from '../components/JsonLd'
 import SEO from '../components/SEO'
 import { Badge } from '@/components/ui/badge'
@@ -121,6 +122,7 @@ const TECH_LOGOS = ['react', 'typescript', 'python', 'nodedotjs', 'kubernetes', 
 
 const FAQS = [
   { q: 'How does Jobyn analyze my resume?', a: 'Jobyn uses a 3-layer analysis engine combining deterministic scoring, ML inference trained on 57,100 real resumes, and generative AI for personalized feedback. In privacy mode your resume is processed on-device and never leaves your browser.' },
+  { q: 'How is Jobyn different from other AI career tools?', a: 'Jobyn is built specifically for engineering students preparing for campus placement — not general professionals. Three things set it apart: (1) GitHub project verification that audits your actual commit history and code complexity, not a self-reported score; (2) a privacy mode that runs the analysis entirely on your device, so your resume never leaves your browser; and (3) ML trained on 57,100 real engineering resumes with 95% role-prediction accuracy. It measures and verifies readiness, rather than just generating text.' },
   { q: 'Is Jobyn free to use?', a: 'Yes. You can upload your resume, get a readiness score, identify skill gaps, and access study materials at no cost.' },
   { q: 'What career roles does Jobyn support?', a: 'Seven roles: Software Developer, Frontend Developer, Backend Developer, Full Stack Developer, Data Scientist, ML Engineer, and DevOps Engineer.' },
   { q: 'How accurate is the analysis?', a: 'Our ML model achieves 95% role-prediction accuracy and R2 = 0.992 for score prediction, trained on 57,100 real engineering resumes from the Indian job market.' },
@@ -142,7 +144,7 @@ function ReadinessGauge({ score, role, skills, coverage }: { score: number; role
         <Badge variant="outline" className="rounded-full border-accent/20 bg-accent/5 text-accent text-[10px] font-bold">LIVE</Badge>
       </div>
 
-      <svg viewBox="0 0 320 210" className="mx-auto w-full max-w-[340px]" role="img" aria-label={`Readiness score ${pct} percent`}>
+      <svg viewBox="0 0 320 210" className="mx-auto w-full max-w-85" role="img" aria-label={`Readiness score ${pct} percent`}>
         <defs>
           <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0" stopColor="#C2593F" />
@@ -198,7 +200,7 @@ function PipelineFlow() {
   return (
     <div className="relative mx-auto max-w-6xl px-6">
       {/* animated curved connector (desktop) */}
-      <div className="relative mb-[-26px] hidden h-[120px] md:block">
+      <div className="relative -mb-6.5 hidden h-30 md:block">
         <svg viewBox="0 0 1200 140" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" aria-hidden="true">
           <defs>
             <linearGradient id="flowGrad" x1="0" y1="0" x2="1" y2="0">
@@ -328,9 +330,9 @@ export default function Landing() {
       className="min-h-screen overflow-x-hidden bg-background text-foreground selection:bg-primary/10"
     >
       <SEO
-        title="Jobyn — Career Readiness Intelligence for Engineering Students"
-        description="AI-powered career readiness platform for engineering students. Upload your resume, identify skill gaps, and get placed faster. Free to start."
-        keywords="resume analyzer, skill gap analysis, campus placement, career readiness, engineering students"
+        title="Jobyn — Resume Score & Placement Prep for Engineering Students"
+        description="Jobyn scores your resume with ML trained on 57,100 real engineering resumes, verifies your GitHub projects, and preps you for placement — privately, on your device. Free to start."
+        keywords="resume score, campus placement preparation, engineering student resume, skill gap analysis, github project verification, on-device resume analysis, mock interview practice"
       />
       <JsonLd data={{
         '@context': 'https://schema.org',
@@ -355,9 +357,18 @@ export default function Landing() {
         '@context': 'https://schema.org',
         '@type': 'SoftwareApplication',
         name: 'Jobyn',
+        alternateName: 'Jobyn — Placement OS',
         applicationCategory: 'EducationalApplication',
         operatingSystem: 'Web',
-        description: 'AI-powered career readiness platform for engineering students. Resume analysis, skill gap detection, interview practice, and placement preparation.',
+        description: 'AI career-readiness platform for engineering students: ML resume scoring, skill-gap detection, voice mock interviews, and GitHub project verification. Privacy-first, on-device analysis.',
+        audience: { '@type': 'EducationalAudience', educationalRole: 'student' },
+        featureList: [
+          'ML resume scoring trained on 57,100 real engineering resumes',
+          'Skill-gap radar mapped to live openings',
+          'Voice mock interviews with instant scoring',
+          'GitHub commit-level project verification',
+          'On-device privacy mode (resume never leaves your browser)'
+        ],
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' }
       }} />
       <JsonLd data={{
@@ -372,7 +383,7 @@ export default function Landing() {
           <Link to="/" className="flex items-center gap-2.5">
             <LogoMark size={28} />
             <div>
-              <span className="font-heading text-sm font-bold tracking-tight text-foreground">Jobyn</span>
+              <span className="font-heading text-sm font-bold tracking-tight text-foreground">Jobyn<sup className="text-[0.6em] font-semibold">™</sup></span>
               <span className="ml-1 text-xs font-semibold uppercase tracking-widest text-primary">OS</span>
             </div>
           </Link>
@@ -411,8 +422,8 @@ export default function Landing() {
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="hero-aura relative overflow-hidden bg-background pt-16 pb-20 md:pt-20 md:pb-24">
         <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
-          <div className="absolute left-[-10%] top-[-30%] h-[600px] w-[600px] rounded-full bg-primary/10 blur-[130px]" />
-          <div className="absolute right-[-15%] top-[35%] h-[520px] w-[520px] rounded-full bg-accent/10 blur-[110px]" />
+          <div className="absolute left-[-12%] top-[-30%] h-130 w-130 rounded-full bg-primary/5 blur-[140px]" />
+          <div className="absolute right-[-18%] top-[40%] h-110 w-110 rounded-full bg-accent/5 blur-[120px]" />
         </div>
 
         <div className="relative z-10 mx-auto max-w-6xl px-6">
@@ -422,21 +433,21 @@ export default function Landing() {
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                 className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-primary"
               >
-                <Award className="size-3.5" /> AI Career Intelligence for Engineers
+                <Award className="size-3.5" /> Placement Readiness for Engineering Students
               </motion.span>
 
               <motion.h1
                 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }}
                 className="font-heading text-4xl font-light leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-6xl"
               >
-                57,100 resumes trained our AI. <span className="font-semibold italic text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Here's what it learned.</span>
+                57,100 resumes trained our AI. <span className="font-semibold italic text-transparent bg-clip-text bg-linear-to-r from-primary to-accent">Here's what it learned about landing your placement.</span>
               </motion.h1>
 
               <motion.p
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.6 }}
                 className="max-w-xl text-base font-medium leading-relaxed text-muted-foreground md:text-lg"
               >
-                Generic AI gives you text. Jobyn gives you a structured, tracked, verified roadmap. Upload your resume, see your gaps, and close them before placement season.
+                Generic AI career tools give you text and a login wall. Jobyn gives engineering students a measured, tracked, verified roadmap — ML resume scoring, GitHub project proof, and mock interviews, all private to your device. See your gaps and close them before placement season.
               </motion.p>
 
               <motion.div
@@ -451,7 +462,7 @@ export default function Landing() {
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55, duration: 0.5 }}
                 className="flex flex-wrap gap-2.5 pt-1"
               >
-                {['95% ML Accuracy', 'On-device Privacy', '57,100 Resumes Analyzed'].map((label) => (
+                {['95% ML Accuracy', 'On-device Privacy', 'GitHub-Verified Projects', 'Free to Start'].map((label) => (
                   <span key={label} className="inline-flex items-center gap-1.5 rounded-full border border-accent/20 bg-accent/5 px-3 py-1 text-xs font-semibold text-accent">
                     <CheckCircle2 className="size-3" /> {label}
                   </span>
@@ -463,20 +474,23 @@ export default function Landing() {
               initial={{ opacity: 0, scale: 0.96, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               className="relative"
             >
-              <ReadinessGauge score={liveScore} role={liveRole} skills={liveSkillsCount} coverage={liveCoverage} />
+              <HeroVideo />
+
+              {/* Demo context card — fills the right column so the hero reads balanced */}
               <motion.div
-                initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1, duration: 0.5 }}
-                className="lift absolute -left-5 -top-5 hidden rounded-2xl bg-white px-4 py-3 lg:block"
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.5 }}
+                className="mt-6 rounded-2xl border border-border bg-white/60 p-5 backdrop-blur-sm"
               >
-                <div className="text-[10px] font-bold uppercase tracking-wider text-stone-400">Placement Advantage</div>
-                <div className="font-heading text-lg font-bold text-primary">+24%</div>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1.15, duration: 0.5 }}
-                className="lift absolute -right-5 -bottom-5 hidden rounded-2xl bg-white px-4 py-3 lg:block"
-              >
-                <div className="text-[10px] font-bold uppercase tracking-wider text-stone-400">Roles Supported</div>
-                <div className="font-heading text-lg font-bold text-accent">7 paths</div>
+                <div className="flex flex-wrap gap-2">
+                  {['Readiness dashboard', 'Skill-gap graph', 'Live AI interview — 91%', 'GitHub verification'].map((chapter) => (
+                    <span key={chapter} className="inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary">
+                      <span className="size-1.5 rounded-full bg-primary" /> {chapter}
+                    </span>
+                  ))}
+                </div>
+                <p className="mt-3.5 text-sm font-medium leading-relaxed text-muted-foreground">
+                  A 70-second walkthrough of the <span className="font-semibold text-foreground">real logged-in product</span> — no mockups, no signup needed to watch.
+                </p>
               </motion.div>
             </motion.div>
           </div>
@@ -502,7 +516,7 @@ export default function Landing() {
       {/* ── Tech stack logo wall (scrolling marquee) ─────────── */}
       <section className="overflow-hidden border-y border-border bg-white py-10">
         <p className="mb-7 px-6 text-center text-[11px] font-bold uppercase tracking-widest text-muted-foreground">We map your resume against the real engineering stack</p>
-        <div className="relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,#000_8%,#000_92%,transparent)]">
+        <div className="relative overflow-hidden mask-[linear-gradient(to_right,transparent,#000_8%,#000_92%,transparent)]">
           <motion.div
             className="flex w-max items-center gap-14"
             animate={reduce ? undefined : { x: ['-50%', '0%'] }}
@@ -559,7 +573,7 @@ export default function Landing() {
                     className={`group relative flex w-full items-center gap-4 overflow-hidden rounded-2xl border p-4 text-left transition-all duration-200 ${isActive ? 'lift border-primary/20 bg-white' : 'border-transparent bg-stone-50/70 hover:bg-stone-100/70'}`}
                     onClick={() => setActiveDomainIdx(index)}
                   >
-                    {isActive && <motion.span layoutId="skill-active-bar" className="absolute inset-y-2 left-0 w-1 rounded-full bg-gradient-to-b from-primary to-accent" />}
+                    {isActive && <motion.span layoutId="skill-active-bar" className="absolute inset-y-2 left-0 w-1 rounded-full bg-linear-to-b from-primary to-accent" />}
                     <div className={`shrink-0 rounded-xl p-2.5 transition-colors ${isActive ? 'bg-primary/10 text-primary' : 'bg-white text-stone-400 group-hover:text-stone-600'}`}>
                       <Icon className="size-5" />
                     </div>
@@ -599,7 +613,7 @@ export default function Landing() {
                         <span className="font-heading text-lg font-bold text-primary">{activeDomain.demand}</span>
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-stone-100">
-                        <motion.div className="h-full rounded-full bg-gradient-to-r from-primary to-accent" initial={{ width: 0 }} animate={{ width: activeDomain.demand }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }} />
+                        <motion.div className="h-full rounded-full bg-linear-to-r from-primary to-accent" initial={{ width: 0 }} animate={{ width: activeDomain.demand }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }} />
                       </div>
                     </div>
 
@@ -724,7 +738,7 @@ export default function Landing() {
                 <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Active Prompt</span>
                 <div className="text-xs font-bold leading-relaxed text-foreground">{SPEECH_SCENARIOS[speechIdx].question}</div>
               </div>
-              <div className="min-h-[135px] overflow-y-auto rounded-xl border border-stone-200 bg-white p-4">
+              <div className="min-h-33.75 overflow-y-auto rounded-xl border border-stone-200 bg-white p-4">
                 <p className="font-mono text-[11px] leading-relaxed text-foreground">{outputText || <span className="italic text-stone-400">Trigger vocal practice simulation below...</span>}</p>
               </div>
               <div className="flex items-center justify-between border-t border-stone-200/60 pt-4">
@@ -846,7 +860,7 @@ export default function Landing() {
           <div className="flex items-center gap-3">
             <LogoMark size={24} />
             <div>
-              <div className="text-xs font-bold text-foreground">Jobyn OS</div>
+              <div className="text-xs font-bold text-foreground">Jobyn™ OS</div>
               <div className="mt-0.5 text-xs font-semibold uppercase tracking-widest text-stone-400">Continuous Placement Engine</div>
             </div>
           </div>
@@ -858,7 +872,7 @@ export default function Landing() {
             <Link to="/docs" className="flex items-center gap-1 transition-colors hover:text-primary">Docs <ArrowUpRight className="inline size-3" /></Link>
             <Link to="/privacy" className="flex items-center gap-1 transition-colors hover:text-primary">Privacy <ArrowUpRight className="inline size-3" /></Link>
           </div>
-          <div className="text-xs font-medium text-stone-400">© 2026 Jobyn • Placement OS</div>
+          <div className="text-xs font-medium text-stone-400">© 2026 Jobyn™ — built by Ganesh Kumar T</div>
         </div>
       </footer>
     </motion.div>

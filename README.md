@@ -8,11 +8,15 @@
   <img src="https://img.shields.io/badge/ML_Accuracy-95%25-brightgreen?style=flat-square" alt="95% Accuracy" />
 </p>
 
-<h1 align="center">Jobyn</h1>
+<h1 align="center">Jobyn&trade;</h1>
 
 <p align="center">
   <b>AI-Powered Career Intelligence Platform for Engineering Students</b><br/>
   <i>Know your readiness. Close every gap. Land the role.</i>
+</p>
+
+<p align="center">
+  <sub>Created, designed, and built by <b>Ganesh Kumar T</b> &middot; original work, &copy; 2026 &middot; MIT-licensed</sub>
 </p>
 
 <p align="center">
@@ -37,9 +41,11 @@
 </p>
 
 <p align="center">
-  <a href="https://getjobyn.pages.dev/quick-score">
-    <img src="frontend/public/product-quickscore.webp" alt="Jobyn — instant AI-powered resume readiness score" width="820" />
-  </a>
+  <video src="https://github.com/Ganesh-0509/Jobyn/raw/main-backup/frontend/public/jobyn-hero.mp4" poster="https://getjobyn.pages.dev/jobyn-hero-poster.png" controls muted loop width="820"></video>
+  <br/>
+  <a href="https://getjobyn.pages.dev/jobyn-intro.mp4"><b>▶ Watch the full 70-second narrated demo</b></a> &nbsp;—&nbsp; the real logged-in product: readiness dashboard, skill-gap dependency graph, a <b>live AI mock interview scored 91%</b>, and GitHub project verification.
+  <br/>
+  <sub>Player not loading? <a href="https://getjobyn.pages.dev/jobyn-intro.mp4">Open the demo directly →</a></sub>
 </p>
 
 ---
@@ -511,6 +517,12 @@ npx vitest run
 
 ---
 
+## Authorship & Ownership
+
+**Jobyn™** is the original work of **Ganesh Kumar T**, sole author and creator. The name, design, source code, and machine-learning models in this repository were conceived and built by the author. Authorship is evidenced by the complete, timestamped commit history of this public repository and the [MIT LICENSE](LICENSE) (© 2026 Ganesh Kumar T).
+
+"Jobyn" is used as an unregistered trademark (™) of the author. All rights in the mark and the product are reserved by the author.
+
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
@@ -518,5 +530,6 @@ MIT License. See [LICENSE](LICENSE) for details.
 ---
 
 <p align="center">
-  <b>Jobyn — From Resume to Ready.</b>
+  <b>Jobyn&trade; — From Resume to Ready.</b><br/>
+  <sub>&copy; 2026 Ganesh Kumar T</sub>
 </p>
