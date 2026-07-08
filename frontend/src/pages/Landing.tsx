@@ -475,6 +475,23 @@ export default function Landing() {
               className="relative"
             >
               <HeroVideo />
+
+              {/* Demo context card — fills the right column so the hero reads balanced */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.5 }}
+                className="mt-6 rounded-2xl border border-border bg-white/60 p-5 backdrop-blur-sm"
+              >
+                <div className="flex flex-wrap gap-2">
+                  {['Readiness dashboard', 'Skill-gap graph', 'Live AI interview — 91%', 'GitHub verification'].map((chapter) => (
+                    <span key={chapter} className="inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary">
+                      <span className="size-1.5 rounded-full bg-primary" /> {chapter}
+                    </span>
+                  ))}
+                </div>
+                <p className="mt-3.5 text-sm font-medium leading-relaxed text-muted-foreground">
+                  A 70-second walkthrough of the <span className="font-semibold text-foreground">real logged-in product</span> — no mockups, no signup needed to watch.
+                </p>
+              </motion.div>
             </motion.div>
           </div>
 

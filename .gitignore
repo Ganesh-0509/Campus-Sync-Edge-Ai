@@ -85,5 +85,3 @@ Include/
 pyvenv.cfg
 lib64
 share/
-# Large intro demo video — hosted externally, not committed to keep repo lean
-frontend/public/jobyn-intro.mp4
