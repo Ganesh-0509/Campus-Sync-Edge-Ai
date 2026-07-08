@@ -76,6 +76,9 @@ PROJECT_INTELLIGENCE_FILE.md
 # Job application POCs
 bolna-poc/
 
+# Promo video project (Remotion) — local only, not shipped
+promo/
+
 # Local venv on Windows
 /Scripts/
 Include/
