@@ -74,3 +74,9 @@ jobs:
           # Cloudflare dashboard) to publish to the root domain. Verify both
           # values in the dashboard and adjust if they differ.
           command: pages deploy dist --project-name=getjobyn --branch=main-backup
+
+      - name: Ping IndexNow (Bing/Yandex/DuckDuckGo)
+        # Instantly notifies IndexNow engines that pages changed. Runs after
+        # deploy so the ownership key file (public/<KEY>.txt) is already live.
+        # Never fails the build — the script always exits 0.
+        run: node scripts/submit-indexnow.mjs

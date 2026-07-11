@@ -29,6 +29,22 @@ const ROUTES = [
   { path: '/blog', file: 'blog.html' },
 ]
 
+// Blog posts (/blog/<slug>) must be prerendered too, otherwise Cloudflare's
+// SPA fallback serves them the homepage shell — whose static canonical points
+// to `/`, so Google dedupes every post to the homepage and drops them.
+// Slugs come from the same source the sitemap uses, parsed as text.
+async function blogRoutes() {
+  const src = await readFile(pathResolve(__dirname, '../src/data/blog-posts.ts'), 'utf-8')
+  const slugRe = /slug:\s*['"]([^'"]+)['"]/g
+  const routes = []
+  let m
+  while ((m = slugRe.exec(src)) !== null) {
+    // Flat file dist/blog/<slug>.html → served at /blog/<slug> (no trailing slash).
+    routes.push({ path: `/blog/${m[1]}`, file: `blog/${m[1]}.html` })
+  }
+  return routes
+}
+
 const MIME_TYPES = {
   html: 'text/html',
   js: 'application/javascript',
@@ -83,7 +99,9 @@ async function prerender() {
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
   })
 
-  for (const route of ROUTES) {
+  const routes = [...ROUTES, ...await blogRoutes()]
+
+  for (const route of routes) {
     const page = await browser.newPage()
     await page.setViewport({ width: 1280, height: 800 })
 
@@ -111,7 +129,7 @@ async function prerender() {
 
   await browser.close()
   server.close()
-  console.log('[prerender] Done —', ROUTES.length, 'pages pre-rendered')
+  console.log('[prerender] Done —', routes.length, 'pages pre-rendered')
 }
 
 prerender().catch(err => {
